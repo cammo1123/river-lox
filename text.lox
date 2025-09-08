@@ -1,26 +1,11 @@
-// Leibniz formula for π
-// https://en.wikipedia.org/wiki/Leibniz_formula_for_%CF%80
-// BlueLox is a tree-walking interpreter.
-// As you can see, it is not very efficient.
-
-fun item(n) {
-	var denominator = 2*n+1;
-	var sign = 1;
-	for (var i = 0; i < n; i = i+1) {
-		sign = sign * -1;
-	}
-	return sign / denominator;
+fun fib(n) {
+  if (n < 2) return n;
+  return fib(n - 1) + fib(n - 2); 
 }
 
-fun leibniz(k) {
-	var quarter = 0;
-	for (var i = 0; i < k; i = i+1) {
-		quarter = quarter + item(i);
-	}
+var before = clock();
+print fib(2);
+var after = clock();
+print after - before;
 
-	return 4*quarter;
-}
-
-// Grab a cup of tea
-// and try 500, 1000, 2000...
-print leibniz(2000);
+print randN(100);

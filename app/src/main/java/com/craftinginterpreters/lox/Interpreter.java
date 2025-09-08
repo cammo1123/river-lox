@@ -28,6 +28,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     });
 
     globals.define("randN", new LoxCallable() {
+      Random random = new Random();
+
       @Override
       public int arity() { return 1; }
 
@@ -38,8 +40,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
           return 0;
         }
 
-        Random rand = new Random();
-        return Double.valueOf(rand.nextInt(((Double) arg).intValue()));
+        return Double.valueOf(random.nextInt(((Double) arg).intValue()));
       }
 
       @Override
@@ -154,10 +155,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     case MINUS:
       checkNumberOperand(expr.operator, right);
       return -(double)right;
+    default:
+      // Unreachable.
+      return null;
     }
-
-    // Unreachable.
-    return null;
   }
 
   @Override
@@ -411,10 +412,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     case STAR:
       checkNumberOperands(expr.operator, left, right);
       return (double)left * (double)right;
+    default:
+      // Unreachable.
+      return null;
     }
-
-    // Unreachable.
-    return null;
   }
 
   @Override
@@ -441,8 +442,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   @Override
   public Object visitGetExpr(Expr.Get expr) {
     Object object = evaluate(expr.object);
-    if (object instanceof LoxInstance) {
-      return ((LoxInstance) object).get(expr.name);
+    if (object instanceof LoxInstance loxInstance) {
+      return loxInstance.get(expr.name);
     }
 
     throw new RuntimeError(expr.name, "Only instances have properties.");
