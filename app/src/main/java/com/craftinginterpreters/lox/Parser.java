@@ -374,6 +374,8 @@ class Parser {
   }
 
   private Expr primary() {
+    if (match(MEASURE)) 
+      return new Expr.Literal(previous().literal);
     if (match(LEFT_BRACKET)) 
       return arrayLiteral();
     if (match(FALSE))

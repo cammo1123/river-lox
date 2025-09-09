@@ -163,8 +163,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     case BANG:
       return !isTruthy(right);
     case MINUS:
-      checkNumberOperand(expr.operator, right);
-      return -(double)right;
+      if (right instanceof Double d) {
+        return -d;
+      } else if (right instanceof UnitVal uv) {
+        return uv.negate();
+      }
+      throw new RuntimeError(expr.operator, "Operand must be a number or UnitVal.");
     default:
       // Unreachable.
       return null;
@@ -234,6 +238,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   private String stringify(Object object) {
     if (object == null)
       return "nil";
+
+    if (object instanceof UnitVal uv) {
+      return uv.toString();
+    }
 
     if (object instanceof java.util.List<?> list) {
       return list.toString();
@@ -482,11 +490,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     String name = stmt.name.lexeme;
     NativeWaterNode node;
     if (stmt.kind.type == TokenType.RIVER) {
-      double area = getDoubleProp(stmt, "area");
-      int lag = (int) getDoubleProp(stmt, "lag");
+      double area = getNumericProp(stmt, "area"); // expected in sqkm (UnitVal OK)
+      int lag = (int) getNumericProp(stmt, "lag"); // plain number expected
       node = new NativeWaterNode(new River(name, area, lag));
     } else if (stmt.kind.type == TokenType.DAM) {
-      double flowPercent = getDoubleProp(stmt, "flow_percent");
+      double flowPercent = getNumericProp(stmt, "flow_percent");
       node = new NativeWaterNode(new Dam(name, flowPercent));
     } else {
       throw new RuntimeError(stmt.name, "Unknown node kind.");
@@ -506,15 +514,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     return null;
   }
 
-  private double getDoubleProp(Stmt.NodeDecl stmt, String key) {
+  private double getNumericProp(Stmt.NodeDecl stmt, String key) {
     Expr e = stmt.props.get(key);
     if (e == null) {
       throw new RuntimeError(stmt.name, "Missing property '" + key + "'.");
     }
     Object v = evaluate(e);
-    if (!(v instanceof Double)) {
-      throw new RuntimeError(stmt.name, "Property '" + key + "' must be a number.");
-    }
-    return (Double) v;
+    if (v instanceof Double d) return d;
+    if (v instanceof UnitVal uv) return uv.asDouble(); // already canonical
+    throw new RuntimeError(stmt.name, "Property '" + key + "' must be number or unit value.");
   }
 }

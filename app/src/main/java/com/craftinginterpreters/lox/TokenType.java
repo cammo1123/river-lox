@@ -14,7 +14,7 @@ enum TokenType {
 	RSHIFT,
 
 	// Literals.
-	IDENTIFIER, STRING, NUMBER,
+	IDENTIFIER, STRING, NUMBER, MEASURE,
 
 	// Keywords.
 	AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,

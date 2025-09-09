@@ -129,16 +129,26 @@ class Scanner {
 
 	private void number() {
 		while (isDigit(peek())) advance();
-
-		// Look for a fractional part.
 		if (peek() == '.' && isDigit(peekNext())) {
-			// Consume the "."
 			advance();
-
 			while (isDigit(peek())) advance();
 		}
-
-		addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
+		double numeric = Double.parseDouble(source.substring(start, current));
+		// Unit suffix: one or more letters (e.g., cm, sqm, mL). Case-insensitive.
+		int unitStart = current;
+		while (isAlpha(peek())) advance();
+		if (unitStart != current) {
+		String unit = source.substring(unitStart, current);
+		try {
+			UnitVal uv = UnitVal.of(numeric, unit);
+			addToken(MEASURE, uv);
+		} catch (IllegalArgumentException ex) {
+			Lox.error(line, ex.getMessage());
+			addToken(NUMBER, numeric); // fallback
+		}
+		} else {
+		addToken(NUMBER, numeric);
+		}
 	}
 
 	private void string() {

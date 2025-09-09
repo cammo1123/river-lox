@@ -1,5 +1,7 @@
 package com.craftinginterpreters.lox;
 
+import java.util.List;
+
 class NativeWaterNode {
   final WaterNode node;
   NativeWaterNode(WaterNode node) { this.node = node; }
@@ -11,12 +13,19 @@ class NativeWaterNode {
         return node.tree();
       case "calculate":
         return new LoxCallable() {
-          @Override public int arity() { return 1; } // one array/list argument
+          @Override public int arity() { return 1; }
           @Override public Object call(Interpreter i, java.util.List<Object> args) {
             Object a = args.get(0);
-            double[] rainfall = toDoubleArray(a, name);
+            double[] rainfall = toDoubleArray(a, name); // mm per step
             double[] out = node.calculate(rainfall);
-            return toList(out);
+
+            String[] days = new String[out.length];
+            for (int j = 0; j < out.length; j++) {
+              days[j] = String.valueOf(j + 1);
+            }
+
+            PrintableTable table = PrintableTable.fromDoubles("Day", "Outflow", days, out, "ML");
+            return table.toString();
           }
           @Override public String toString() { return "<native fn calculate>"; }
         };
@@ -36,17 +45,14 @@ class NativeWaterNode {
     double[] out = new double[list.size()];
     for (int i = 0; i < list.size(); i++) {
       Object v = list.get(i);
-      if (!(v instanceof Double)) {
-        throw new RuntimeError(where, "Array element " + i + " is not a number.");
+      if (v instanceof Double d) {
+        out[i] = d; // mm
+      } else if (v instanceof UnitVal uv) {
+        out[i] = uv.asDouble(); // canonical; for length this is mm
+      } else {
+        throw new RuntimeError(where, "Array element " + i + " is not a number or unit.");
       }
-      out[i] = (Double) v;
     }
-    return out;
-  }
-
-  private static java.util.List<Double> toList(double[] arr) {
-    java.util.List<Double> out = new java.util.ArrayList<>(arr.length);
-    for (double v : arr) out.add(v);
     return out;
   }
 }

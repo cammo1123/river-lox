@@ -50,7 +50,8 @@ class River extends WaterNode {
 
     // add local rainfall contributions shifted by this river's lag
     for (int day = 0; day < rainfall.length; day++) {
-      double contrib = rainfall[day] * area; // simple mm -> units conversion
+      // rainfall in mm, area in sqkm → megaLitres:
+      double contrib = rainfall[day] * area;
       int idx = day + lagDays;
       if (idx < outLen) out[idx] += contrib;
     }
