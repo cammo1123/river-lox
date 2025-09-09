@@ -4,7 +4,9 @@ import static com.craftinginterpreters.lox.TokenType.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Arrays;
+import java.util.HashMap;
 
 class Parser {
   private static class ParseError extends RuntimeException {}
@@ -58,6 +60,11 @@ class Parser {
   private Expr expression() { return assignment(); }
 
   private Stmt statement() {
+    // New hydrology constructs
+    if (match(RIVER)) return nodeDeclaration(previous());
+    if (match(DAM)) return nodeDeclaration(previous());
+    if (check(IDENTIFIER) && checkNext(RSHIFT)) return edgeStatement();
+
     if (match(CLASS)) return classDeclaration();
     if (match(FUN)) return function("function");
     if (match(FOR)) return forStatement();
@@ -68,6 +75,36 @@ class Parser {
     if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
     return expressionStatement();
+  }
+
+  private Stmt nodeDeclaration(Token kindToken) {
+    // kindToken.type is RIVER or DAM
+    Token name = consume(IDENTIFIER, "Expect " + (kindToken.type == RIVER ? "river" : "dam") + " name.");
+    consume(LEFT_BRACE, "Expect '{' after name.");
+  
+    Map<String, Expr> props = new HashMap<>();
+    if (!check(RIGHT_BRACE)) {
+      while (true) {
+        Token key = consume(IDENTIFIER, "Expect property name.");
+        consume(COLON, "Expect ':' after property name.");
+        Expr value = expression();
+        props.put(key.lexeme, value);
+        if (!match(COMMA)) break;      // no comma → end of list
+        if (check(RIGHT_BRACE)) break; // allow trailing comma
+      }
+    }
+  
+    consume(RIGHT_BRACE, "Expect '}' after properties.");
+    consume(SEMICOLON, "Expect ';' after declaration.");
+    return new Stmt.NodeDecl(kindToken, name, props);
+  }
+
+  private Stmt edgeStatement() {
+    Token fromName = consume(IDENTIFIER, "Expect upstream name.");
+    Token arrow = consume(RSHIFT, "Expect '>>'.");
+    Token toName = consume(IDENTIFIER, "Expect downstream name.");
+    consume(SEMICOLON, "Expect ';' after connection.");
+    return new Stmt.Edge(new Expr.Variable(fromName), arrow, new Expr.Variable(toName));
   }
 
   private Stmt returnStatement() {
@@ -337,6 +374,8 @@ class Parser {
   }
 
   private Expr primary() {
+    if (match(LEFT_BRACKET)) 
+      return arrayLiteral();
     if (match(FALSE))
       return new Expr.Literal(false);
     if (match(TRUE))
@@ -365,6 +404,15 @@ class Parser {
     }
 
     throw error(peek(), "Expect expression.");
+  }
+
+  private Expr arrayLiteral() {
+    List<Expr> elements = new ArrayList<>();
+    if (!check(RIGHT_BRACKET)) {
+      do { elements.add(expression()); } while (match(COMMA));
+    }
+    consume(RIGHT_BRACKET, "Expect ']' after array literal.");
+    return new Expr.Array(elements);
   }
 
   private boolean match(TokenType... types) {
@@ -429,5 +477,11 @@ class Parser {
 
       advance();
     }
+  }
+
+  private boolean checkNext(TokenType type) {
+    if (isAtEnd()) return false;
+    if (current + 1 >= tokens.size()) return false;
+    return tokens.get(current + 1).type == type;
   }
 }

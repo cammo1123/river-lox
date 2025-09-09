@@ -243,6 +243,30 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     return null;
   }
 
+  public Void visitNodeDeclStmt(Stmt.NodeDecl stmt) {
+    // Declare/define the variable name in the current scope.
+    declare(stmt.name);
+    // Resolve property expressions (they can reference earlier bindings).
+    for (Expr value : stmt.props.values()) {
+      resolve(value);
+    }
+    define(stmt.name);
+    return null;
+  }
+
+  @Override
+  public Void visitEdgeStmt(Stmt.Edge stmt) {
+    resolve(stmt.from);
+    resolve(stmt.to);
+    return null;
+  }
+
+  @Override
+  public Void visitArrayExpr(Expr.Array expr) {
+    for (Expr e : expr.elements) resolve(e);
+    return null;
+  }
+
   private void resolve(Stmt stmt) {
     stmt.accept(this);
   }

@@ -1,18 +1,21 @@
 package com.craftinginterpreters.lox;
 
 import java.util.List;
+import java.util.Map;
 
 abstract class Stmt {
 	interface Visitor<R> {
 		R visitBlockStmt(Block stmt);
 		R visitClassStmt(Class stmt);
 		R visitExpressionStmt(Expression stmt);
+		R visitEdgeStmt(Edge stmt);
 		R visitFunctionStmt(Function stmt);
 		R visitIfStmt(If stmt);
 		R visitReturnStmt(Return stmt);
 		R visitPrintStmt(Print stmt);
 		R visitVarStmt(Var stmt);
 		R visitWhileStmt(While stmt);
+		R visitNodeDeclStmt(NodeDecl stmt);
 	}
 	static class Block extends Stmt {
 		Block(List<Stmt> statements) {
@@ -53,6 +56,22 @@ abstract class Stmt {
 		}
 
 		final Expr expression;
+	}
+	static class Edge extends Stmt {
+		Edge(Expr.Variable from, Token arrow, Expr.Variable to) {
+			this.from = from;
+			this.arrow = arrow;
+			this.to = to;
+		}
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitEdgeStmt(this);
+		}
+
+		final Expr.Variable from;
+		final Token arrow;
+		final Expr.Variable to;
 	}
 	static class Function extends Stmt {
 		Function(Token name, List<Token> params, List<Stmt> body) {
@@ -139,6 +158,22 @@ abstract class Stmt {
 
 		final Expr condition;
 		final Stmt body;
+	}
+	static class NodeDecl extends Stmt {
+		NodeDecl(Token kind, Token name, Map<String,Expr> props) {
+			this.kind = kind;
+			this.name = name;
+			this.props = props;
+		}
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitNodeDeclStmt(this);
+		}
+
+		final Token kind;
+		final Token name;
+		final Map<String,Expr> props;
 	}
 
 	abstract <R> R accept(Visitor<R> visitor);

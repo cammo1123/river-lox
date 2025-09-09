@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   final Environment globals = new Environment();
@@ -146,6 +147,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   }
 
   @Override
+  public Object visitArrayExpr(Expr.Array expr) {
+    List<Object> out = new ArrayList<>();
+    for (Expr e : expr.elements) {
+      out.add(evaluate(e));
+    }
+    return out;
+  }
+
+  @Override
   public Object visitUnaryExpr(Expr.Unary expr) {
     Object right = evaluate(expr.right);
 
@@ -224,6 +234,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   private String stringify(Object object) {
     if (object == null)
       return "nil";
+
+    if (object instanceof java.util.List<?> list) {
+      return list.toString();
+    }
 
     if (object instanceof Double) {
       String text = object.toString();
@@ -427,6 +441,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       arguments.add(evaluate(argument));
     }
 
+    // Allow NativeWaterNode methods (calculate) to be callable
+    if (callee instanceof LoxCallable) {
+      LoxCallable function = (LoxCallable) callee;
+      if (arguments.size() != function.arity()) {
+        throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+      }
+      return function.call(this, arguments);
+    }
+
     if (!(callee instanceof LoxCallable)) {
       throw new RuntimeError(expr.paren, "Can only call functions and classes.");
     }
@@ -442,10 +465,56 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   @Override
   public Object visitGetExpr(Expr.Get expr) {
     Object object = evaluate(expr.object);
+    // Support native water node properties/methods
+    if (object instanceof NativeWaterNode n) {
+      return n.get(expr.name);
+    }
+
     if (object instanceof LoxInstance loxInstance) {
       return loxInstance.get(expr.name);
     }
 
     throw new RuntimeError(expr.name, "Only instances have properties.");
+  }
+
+  @Override
+  public Void visitNodeDeclStmt(Stmt.NodeDecl stmt) {
+    String name = stmt.name.lexeme;
+    NativeWaterNode node;
+    if (stmt.kind.type == TokenType.RIVER) {
+      double area = getDoubleProp(stmt, "area");
+      int lag = (int) getDoubleProp(stmt, "lag");
+      node = new NativeWaterNode(new River(name, area, lag));
+    } else if (stmt.kind.type == TokenType.DAM) {
+      double flowPercent = getDoubleProp(stmt, "flow_percent");
+      node = new NativeWaterNode(new Dam(name, flowPercent));
+    } else {
+      throw new RuntimeError(stmt.name, "Unknown node kind.");
+    }
+    environment.define(name, node);
+    return null;
+  }
+
+  @Override
+  public Void visitEdgeStmt(Stmt.Edge stmt) {
+    Object up = evaluate(stmt.from);
+    Object down = evaluate(stmt.to);
+    if (!(up instanceof NativeWaterNode) || !(down instanceof NativeWaterNode)) {
+      throw new RuntimeError(stmt.arrow, "Connections require water nodes.");
+    }
+    ((NativeWaterNode) down).addInflow((NativeWaterNode) up);
+    return null;
+  }
+
+  private double getDoubleProp(Stmt.NodeDecl stmt, String key) {
+    Expr e = stmt.props.get(key);
+    if (e == null) {
+      throw new RuntimeError(stmt.name, "Missing property '" + key + "'.");
+    }
+    Object v = evaluate(e);
+    if (!(v instanceof Double)) {
+      throw new RuntimeError(stmt.name, "Property '" + key + "' must be a number.");
+    }
+    return (Double) v;
   }
 }

@@ -34,6 +34,8 @@ class Scanner {
 		keywords.put("true",   TRUE);
 		keywords.put("var",    VAR);
 		keywords.put("while",  WHILE);
+		keywords.put("river",  RIVER);
+		keywords.put("dam",    DAM);
 	}
 
 	Scanner(String source) {
@@ -58,11 +60,14 @@ class Scanner {
 			case ')': addToken(RIGHT_PAREN); break;
 			case '{': addToken(LEFT_BRACE); break;
 			case '}': addToken(RIGHT_BRACE); break;
+			case '[': addToken(LEFT_BRACKET); break;
+			case ']': addToken(RIGHT_BRACKET); break;
 			case ',': addToken(COMMA); break;
 			case '.': addToken(DOT); break;
 			case '-': addToken(MINUS); break;
 			case '+': addToken(PLUS); break;
 			case ';': addToken(SEMICOLON); break;
+			case ':': addToken(COLON); break;
 			case '*': addToken(STAR); break;
 			case '!':
 				addToken(match('=') ? BANG_EQUAL : BANG);
@@ -74,7 +79,13 @@ class Scanner {
 				addToken(match('=') ? LESS_EQUAL : LESS);
 				break;
 			case '>':
-				addToken(match('=') ? GREATER_EQUAL : GREATER);
+				if (match('>')) {
+					addToken(RSHIFT);
+				} else if (match('=')) {
+					addToken(GREATER_EQUAL);
+				} else {
+					addToken(GREATER);
+				}
 				break;
 			case '/':
 				if (match('/')) {
@@ -82,12 +93,6 @@ class Scanner {
 					while (peek() != '\n' && !isAtEnd()) advance();
 				} else {
 					addToken(SLASH);
-				}
-				break;
-
-			case 'o':
-				if (match('r')) {
-					addToken(OR);
 				}
 				break;
 
