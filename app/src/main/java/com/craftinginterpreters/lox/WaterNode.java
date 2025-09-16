@@ -3,6 +3,7 @@ package com.craftinginterpreters.lox;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,35 +27,55 @@ public abstract class WaterNode {
    */
   public abstract double[] calculate(double[] rainfall);
 
-  /** Pretty-print subtree rooted at this node. */
   public String tree() {
     StringBuilder sb = new StringBuilder();
-    tree(sb, "", new HashSet<WaterNode>());
-    return sb.toString();
-  }
+    Set<WaterNode> visited = new HashSet<>();
 
-  protected void tree(StringBuilder sb, String indent, Set<WaterNode> visited) {
-    if (visited.contains(this)) {
-      sb.append(indent).append("[cycle ").append(name).append("]\n");
-      return;
-    }
+    // print root label (no branch glyph for the root)
+    sb.append(nodeLabel()).append('\n');
     visited.add(this);
-    sb.append(indent).append(nodeLabel()).append("\n");
-    for (WaterNode w : inflows) {
-      w.tree(sb, indent + "\t", visited);
+
+    Iterator<WaterNode> it = inflows.iterator();
+    while (it.hasNext()) {
+        WaterNode child = it.next();
+        boolean last = !it.hasNext();
+        child.tree(sb, "", last, visited);
+    }
+
+    visited.remove(this);
+    return sb.toString();
+}
+
+  protected void tree(StringBuilder sb, String prefix, boolean isTail, Set<WaterNode> visited) {
+    if (visited.contains(this)) {
+        sb.append(prefix)
+          .append(isTail ? "\\\\-- " : "|-- ")
+          .append("[cycle ").append(name).append("]\n");
+        return;
+    }
+
+    sb.append(prefix)
+      .append(isTail ? "\\\\-- " : "|-- ")
+      .append(nodeLabel()).append('\n');
+
+    visited.add(this);
+    Iterator<WaterNode> it = inflows.iterator();
+    while (it.hasNext()) {
+        WaterNode child = it.next();
+        boolean last = !it.hasNext();
+        child.tree(sb, prefix + (isTail ? "    " : "|   "), last, visited);
     }
     visited.remove(this);
-  }
+}
 
   protected String nodeLabel() {
-    return getClass().getSimpleName() + "(" + name + ")";
+    return getClass().getSimpleName().charAt(0) + ": " + name;
   }
 
   /** Node-specific lag in days (rivers override, dams return 0). */
   protected abstract int localLagDays();
 
-  private int computeMaxAccumulatedLag(Map<WaterNode, Integer> memo,
-                                       Set<WaterNode> visiting) {
+  private int computeMaxAccumulatedLag(Map<WaterNode, Integer> memo, Set<WaterNode> visiting) {
     if (memo.containsKey(this)) return memo.get(this);
     if (visiting.contains(this))
       throw new IllegalStateException("Cycle detected in network at " + name);

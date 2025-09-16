@@ -50,6 +50,6 @@ class Dam extends WaterNode {
 
   @Override
   protected String nodeLabel() {
-    return "Dam(" + name + ")[flowPercent=" + flowPercent + "]";
+    return super.nodeLabel() + " [ flowPercent=" + flowPercent + " ]";
   }
 }

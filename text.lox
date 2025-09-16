@@ -1,12 +1,20 @@
-river upper_molongolo     { area: 100sqkm, lag: 0 };
-river lower_molongolo     { area: 200sqkm, lag: 3 };
-river central_molongolo   { area: 300sqkm, lag: 6 };
+fun catchment_area1() {
+	river upper_molongolo	{ area: 100sqkm, lag: 0 };
+	river lower_molongolo	{ area: 100sqkm, lag: 3 };
+	river central_molongolo	{ area: 100sqkm, lag: 6 };
+	river middle_molongolo	{ area: 100sqkm, lag: 9 };
 
-dam dam_1 { flow_percent: 1 };
+	dam dam_1 { flow_percent: 1 };
 
-upper_molongolo >> central_molongolo;
-lower_molongolo >> central_molongolo;
-central_molongolo >> dam_1;
+	upper_molongolo >> central_molongolo;
+	lower_molongolo >> central_molongolo;
+	middle_molongolo >> upper_molongolo;
+	central_molongolo >> dam_1;
 
-print dam_1.tree;
-print dam_1.calculate([10, 20, 30]);
+	print "======   Catchment Area 1   ======";
+	print dam_1.tree;
+	print dam_1.calculate([10, 20, 30]);
+	print "====== End Catchment Area 1 ======";
+}
+
+catchment_area1();

@@ -62,6 +62,6 @@ class River extends WaterNode {
 
   @Override
   protected String nodeLabel() {
-    return "River(" + name + ")[area=" + area + ",lag=" + lagDays + "]";
+    return super.nodeLabel() + " [ area=" + area + ", lag=" + lagDays + " ]";
   }
 }
