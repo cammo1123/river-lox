@@ -84,6 +84,46 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       @Override
       public String toString() { return "<native fn>"; }
     });
+
+    globals.define("max", new LoxCallable() {
+      @Override
+      public int arity() { return 2; }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        Object arg1 = arguments.get(0);
+        Object arg2 = arguments.get(1);
+
+        if (arg1 instanceof Double d1 && arg2 instanceof Double d2) {
+          return Math.max(d1, d2);
+        }
+
+        return null;
+      }
+
+      @Override
+      public String toString() { return "<native fn>"; }
+    });
+
+    globals.define("min", new LoxCallable() {
+      @Override
+      public int arity() { return 2; }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        Object arg1 = arguments.get(0);
+        Object arg2 = arguments.get(1);
+
+        if (arg1 instanceof Double d1 && arg2 instanceof Double d2) {
+          return Math.min(d1, d2);
+        }
+
+        return null;
+      }
+
+      @Override
+      public String toString() { return "<native fn>"; }
+    });
   }
 
   @Override
@@ -491,8 +531,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       LoxCallable lag   = getLambda(stmt, "lag",  1);
       node = new NativeWaterNode(new River(this, name, area, lag));
     } else if (stmt.kind.type == TokenType.DAM) {
-      LoxCallable flowPercent = getLambda(stmt, "flow_percent", 0);
-      node = new NativeWaterNode(new Dam(this, name, flowPercent));
+      LoxCallable outFlow = getLambda(stmt, "out_flow", 1);
+      node = new NativeWaterNode(new Dam(this, name, outFlow));
     } else {
       throw new RuntimeError(stmt.name, "Unknown node kind.");
     }
@@ -535,7 +575,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         
         @Override
-        public String toString() { return "<const " + val + ">"; }
+        public String toString() { return String.valueOf(val); }
       };
     }
 

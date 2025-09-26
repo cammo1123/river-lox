@@ -1,14 +1,14 @@
 fun catchment_area1() {
-	var generic_flow = (day) => {
-		return (day - 4) * -1;
+	var lag = (day) => {
+		return max((day - 4) * -1, 0);
 	};
 
-	river upper_molongolo	{ area: 100sqkm, lag: generic_flow };
-	river lower_molongolo	{ area: 100sqkm, lag: generic_flow };
-	river central_molongolo	{ area: 100sqkm, lag: generic_flow };
-	river middle_molongolo	{ area: 100sqkm, lag: generic_flow };
+	river upper_molongolo	{ area: 100sqkm, lag: lag };
+	river lower_molongolo	{ area: 100sqkm, lag: lag };
+	river central_molongolo	{ area: 100sqkm, lag: lag };
+	river middle_molongolo	{ area: 100sqkm, lag: lag };
 
-	dam dam_1 { flow_percent: 1 };
+	dam dam_1 { out_flow: (current_volume) => { return current_volume; } };
 
 	upper_molongolo >> central_molongolo;
 	lower_molongolo >> central_molongolo;
@@ -22,21 +22,19 @@ fun catchment_area1() {
 }
 
 fun catchment_area2() {
-	river upper_molongolo	{ area: 100sqkm, lag: 1 };
-	river lower_molongolo	{ area: 100sqkm, lag: 2 };
-	river central_molongolo	{ area: 100sqkm, lag: 3 };
-	river middle_molongolo	{ area: 100sqkm, lag: 4 };
+	river upper_molongolo	{ area: 1sqkm, lag: 1 };
+	river central_molongolo	{ area: 1sqkm, lag: 2 };
+	river lower_molongolo	{ area: 1sqkm, lag: 4 };
 
-	dam dam_1 { flow_percent: 1 };
+	dam dam_1 { out_flow: (current_volume) => { return 5; } };
 
 	upper_molongolo >> central_molongolo;
-	lower_molongolo >> central_molongolo;
-	middle_molongolo >> upper_molongolo;
-	central_molongolo >> dam_1;
+	central_molongolo >> lower_molongolo;
+	lower_molongolo >> dam_1;
 
 	print "======   Catchment Area 2   ======";
 	print dam_1.tree;
-	print dam_1.calculate(9, [10, 10, 10, 10]);
+	print dam_1.calculate(10, [10]);
 	print "====== End Catchment Area 2 ======";
 }
 
