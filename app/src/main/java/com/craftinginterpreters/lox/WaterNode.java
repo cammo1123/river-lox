@@ -87,9 +87,6 @@ public abstract class WaterNode {
 
   protected int downstreamCount() { return outflows.size(); }
 
-  /** Node-specific lag in days (rivers override, dams return 0). */
-  protected abstract int localLagDays(int day);
-
   /**
    * Subclasses implement per-node logic and must return:
    * - totalOut: the node's total outflow (pre-split)

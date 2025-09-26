@@ -8,30 +8,18 @@ import java.util.Set;
 
 class River extends WaterNode {
   private final double area;
-  private final LoxCallable lagDays;
+  private final double flowDays;
+  private final LoxCallable flowShape;
 
-  public River(Interpreter interpreter, String name, double area,
-               LoxCallable lagDays) {
+  public River(Interpreter interpreter, String name, double area, double flowDays,
+               LoxCallable flowShape) {
     super(interpreter, name);
     this.area = area;
-    this.lagDays = lagDays;
+    this.flowDays = flowDays;
+    this.flowShape = flowShape;
   }
 
   public double getArea() { return area; }
-
-  public int getLagDays(int day) {
-    Object lagObject = lagDays.call(interpreter, List.of((double)day));
-    if (lagObject instanceof Double calcLag) {
-      return Math.max(0, calcLag.intValue());
-    }
-    throw new RuntimeError(new Token(TokenType.EOF, name, (Object)null, 0),
-                           "Property 'lag' must return a number.");
-  }
-
-  @Override
-  protected int localLagDays(int day) {
-    return getLagDays(day);
-  }
 
   @Override
   protected NodeOutputs doCalculateDetailed(int days, double[] rainfall,
@@ -49,7 +37,11 @@ class River extends WaterNode {
     double[] backlog = new double[days];
     double backlogSum = 0.0;
 
+    // number of days to consider from the flow shape
+    int shapeLen = Math.max(1, (int) Math.ceil(flowDays));
+
     for (int day = 0; day < days; day++) {
+      // Amount that was due today from previous scheduling.
       double prevDue = totalOut[day];
 
       double incoming = 0.0;
@@ -64,26 +56,42 @@ class River extends WaterNode {
 
       // Local rainfall contribution at this node.
       if (day < rainfall.length) {
-        // mm * km^2 => ML
-        incoming +=
-            UnitVal.of((rainfall[day] * areaVal), Unit.MEGALITER).asCanonical();
+        // mm * km^2 => ML (canonical)
+        incoming += UnitVal.of((rainfall[day] * areaVal), Unit.MEGALITER).asCanonical();
       }
 
-      // Apply node's lag to total incoming.
-      int lag = localLagDays(day);
-      int idx = day + lag;
+      // Distribute incoming across subsequent days according to flowShape.
+      for (int k = 0; k < shapeLen; k++) {
+        int idx = day + k;
+        if (idx >= days) {
+          // Outside simulation window: drop (consistent with prior behavior).
+          continue;
+        }
 
-      if (idx < days) {
-        totalOut[idx] += incoming;
-        if (lag > 0) {
-          // Newly queued for a future day; counts as backlog.
-          backlogSum += incoming;
+        Object fracObj = flowShape.call(interpreter, List.of((double) k, flowDays));
+        if (!(fracObj instanceof Double f)) {
+          throw new RuntimeError(
+              new Token(TokenType.EOF, name, (Object) null, 0),
+              "Property 'flow_shape' must return a number.");
+        }
+        double frac = f;
+        if (Double.isNaN(frac) || Double.isInfinite(frac)) {
+          frac = 0.0;
+        }
+
+        double amount = incoming * frac;
+        totalOut[idx] += amount;
+
+        // If this portion is scheduled for a future day (k > 0) and within
+        // the simulated horizon, count it toward backlog.
+        if (k > 0) {
+          backlogSum += amount;
         }
       }
 
-      // Today's outflow is totalOut[day]; remove only what was already queued
-      // before today (prevDue). New lag==0 additions should not affect backlog.
+      // Remove what's due today from backlog (it is leaving storage now).
       backlogSum -= prevDue;
+      if (backlogSum < 0.0) backlogSum = 0.0; // guard against tiny negatives
       backlog[day] = backlogSum;
     }
 
@@ -105,6 +113,7 @@ class River extends WaterNode {
   protected String nodeLabel() {
     return super.nodeLabel() +
         " [ area=" + UnitVal.ofCanonical(area, Kind.AREA).toString() +
-        ", lag=" + lagDays + " ]";
+        ", flow_days=" + flowDays +
+        ", flow_shape=" + flowShape + " ]";
   }
 }

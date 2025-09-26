@@ -148,7 +148,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       }
     });
 
-	globals.define("clamp", new LoxCallable() {
+    globals.define("clamp", new LoxCallable() {
       @Override
       public int arity() {
         return 3;
@@ -160,8 +160,93 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object arg2 = arguments.get(1);
         Object arg3 = arguments.get(2);
 
-        if (arg1 instanceof Double val && arg2 instanceof Double min && arg3 instanceof Double max) {
+        if (arg1 instanceof Double val && arg2 instanceof Double min &&
+            arg3 instanceof Double max) {
           return Math.clamp(val, min, max);
+        }
+
+        return null;
+      }
+
+      @Override
+      public String toString() {
+        return "<native fn>";
+      }
+    });
+
+    globals.define("Shape_Linear", new LoxCallable() {
+      @Override
+      public int arity() {
+        return 2;
+      }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        Object arg1 = arguments.get(0);
+        Object arg2 = arguments.get(1);
+
+        if (arg1 instanceof Double && arg2 instanceof Double maxDays) {
+          return 1 / maxDays;
+        }
+
+        return null;
+      }
+
+      @Override
+      public String toString() {
+        return "<native fn>";
+      }
+    });
+
+    globals.define("Shape_LastDay", new LoxCallable() {
+      @Override
+      public int arity() {
+        return 2;
+      }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        Object arg1 = arguments.get(0);
+        Object arg2 = arguments.get(1);
+
+        if (arg1 instanceof Double day && arg2 instanceof Double maxDays) {
+          if (day + 1 == maxDays) {
+            return (double)1;
+          }
+
+          return (double)0;
+        }
+
+        return null;
+      }
+
+      @Override
+      public String toString() {
+        return "<native fn>";
+      }
+    });
+
+    globals.define("Shape_TriangularRising", new LoxCallable() {
+      @Override
+      public int arity() {
+        return 2;
+      }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        Object arg1 = arguments.get(0);
+        Object arg2 = arguments.get(1);
+
+        if (arg1 instanceof Double dayD && arg2 instanceof Double maxDaysD) {
+          int n = Math.max(1, (int)Math.ceil(maxDaysD)); // number of slots
+          int day = dayD.intValue();
+          if (day < 0 || day >= n)
+            return (double)0;
+
+          // weight ∝ (day+1); normalization sum = n*(n+1)/2
+          double numerator = day + 1;
+          double denom = n * (n + 1) / 2.0;
+          return numerator / denom;
         }
 
         return null;
@@ -510,8 +595,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       if (left instanceof String && right instanceof String) {
         return (String)left + (String)right;
       }
-      throw new RuntimeError(expr.operator,
-                             "Operands must be two numbers or two strings.");
+
+	  if (left instanceof String && right instanceof Object) {
+        return (String)left + String.valueOf(right);
+      }
+
+	  if (left instanceof Object && right instanceof String) {
+        return String.valueOf(left) + (String)right;
+      }
+      throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
     case SLASH:
       checkNumberOperands(expr.operator, left, right);
       return (double)left / (double)right;
@@ -579,9 +671,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     String name = stmt.name.lexeme;
     NativeWaterNode node;
     if (stmt.kind.type == TokenType.RIVER) {
+      Double flow_days = getDouble(stmt, "flow_days");
       Double area = getDouble(stmt, "area");
-      LoxCallable lag = getLambda(stmt, "lag", 1);
-      node = new NativeWaterNode(new River(this, name, area, lag));
+      LoxCallable flow_shape = getLambda(stmt, "flow_shape", 2);
+      node = new NativeWaterNode(
+          new River(this, name, area, flow_days, flow_shape));
     } else if (stmt.kind.type == TokenType.DAM) {
       LoxCallable outFlow = getLambda(stmt, "out_flow", 1);
       node = new NativeWaterNode(new Dam(this, name, outFlow));
@@ -605,17 +699,18 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   }
 
   private Double getDouble(Stmt.NodeDecl stmt, String key) {
-	Expr e = stmt.props.get(key);
+    Expr e = stmt.props.get(key);
     if (e == null) {
       throw new RuntimeError(stmt.name, "Missing property '" + key + "'.");
     }
 
-	Object v = evaluate(e);
-	if (v instanceof Double val) {
-		return val;
-	}
+    Object v = evaluate(e);
+    if (v instanceof Double val) {
+      return val;
+    }
 
-	throw new RuntimeError(stmt.name, "Property '" + key +"' must be number or a unit");
+    throw new RuntimeError(stmt.name,
+                           "Property '" + key + "' must be number or a unit");
   }
 
   private LoxCallable getLambda(Stmt.NodeDecl stmt, String key,

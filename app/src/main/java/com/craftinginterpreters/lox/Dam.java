@@ -14,11 +14,6 @@ public class Dam extends WaterNode {
   }
 
   @Override
-  protected int localLagDays(int day) {
-    return 0;
-  }
-
-  @Override
   protected NodeOutputs doCalculateDetailed(int days, double[] rainfall,
                                             Set<WaterNode> visiting,
                                             DetailedResult res) {
