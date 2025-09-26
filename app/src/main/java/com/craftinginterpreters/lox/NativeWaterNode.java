@@ -13,11 +13,11 @@ class NativeWaterNode {
         return node.tree();
       case "calculate":
         return new LoxCallable() {
-          @Override public int arity() { return 1; }
+          @Override public int arity() { return 2; }
           @Override public Object call(Interpreter i, java.util.List<Object> args) {
-            Object a = args.get(0);
-            double[] rainfall = toDoubleArray(a, name); // mm per step
-            double[] out = node.calculate(rainfall);
+            double[] rainfall = toDoubleArray(args.get(1), name);
+            int daysToSim = ((Double) args.get(0)).intValue();
+            double[] out = node.calculate(daysToSim, rainfall);
 
             String[] days = new String[out.length];
             for (int j = 0; j < out.length; j++) {

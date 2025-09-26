@@ -59,6 +59,27 @@ class Parser {
 
   private Expr expression() { return assignment(); }
 
+  private Expr lambda() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' before parameters.");
+    List<Token> parameters = new ArrayList<>();
+    if (!check(TokenType.RIGHT_PAREN)) {
+        do {
+            parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+        } while (match(COMMA));
+    }
+    consume(RIGHT_PAREN, "Expect ')' after parameters.");
+    consume(ARROW, "Expect '=>' after parameters.");
+
+    List<Stmt> body = new ArrayList<>();
+    if (match(LEFT_BRACE)) {
+        body = block();
+    } else {
+        Expr value = expression();
+        body.add(new Stmt.Return(new Token(TokenType.RETURN, "return", null, -1), value));
+    }
+    return new Expr.Lambda(parameters, body);
+  }
+
   private Stmt statement() {
     // New hydrology constructs
     if (match(RIVER)) return nodeDeclaration(previous());
@@ -398,6 +419,7 @@ class Parser {
 
     if (match(THIS)) return new Expr.This(previous());
     if (match(IDENTIFIER)) return new Expr.Variable(previous());
+    if (isLambdaStart()) return lambda();
 
     if (match(LEFT_PAREN)) {
       Expr expr = expression();
@@ -406,6 +428,30 @@ class Parser {
     }
 
     throw error(peek(), "Expect expression.");
+  }
+
+  private boolean isLambdaStart() {
+    int i = 0;
+    if (!checkAhead(i, TokenType.LEFT_PAREN)) return false;
+    i++;
+
+    // Skip optional parameters
+    while (checkAhead(i, TokenType.IDENTIFIER)) {
+      i++;
+      if (checkAhead(i, TokenType.COMMA)) i++;
+      else break;
+    }
+
+    if (!checkAhead(i, TokenType.RIGHT_PAREN)) return false;
+    i++;
+
+    // Must be followed by ->
+    return checkAhead(i, TokenType.ARROW);
+  }
+
+  private boolean checkAhead(int offset, TokenType type) {
+    if (current + offset >= tokens.size()) return false;
+    return tokens.get(current + offset).type == type;
   }
 
   private Expr arrayLiteral() {

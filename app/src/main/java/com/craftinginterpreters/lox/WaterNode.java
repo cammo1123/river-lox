@@ -11,8 +11,10 @@ import java.util.Set;
 public abstract class WaterNode {
   protected final String name;
   protected final List<WaterNode> inflows = new ArrayList<>();
+  protected final Interpreter interpreter;
 
-  protected WaterNode(String name) {
+  protected WaterNode(Interpreter interpreter, String name) {
+    this.interpreter = interpreter;
     this.name = name;
   }
 
@@ -25,7 +27,7 @@ public abstract class WaterNode {
    * Public calculate entry; returns outflow time-series. Length is
    * rainfall.length + cumulative lag upstream.
    */
-  public abstract double[] calculate(double[] rainfall);
+  public abstract double[] calculate(int days, double[] rainfall);
 
   public String tree() {
     StringBuilder sb = new StringBuilder();
@@ -73,45 +75,20 @@ public abstract class WaterNode {
   }
 
   /** Node-specific lag in days (rivers override, dams return 0). */
-  protected abstract int localLagDays();
-
-  private int computeMaxAccumulatedLag(Map<WaterNode, Integer> memo, Set<WaterNode> visiting) {
-    if (memo.containsKey(this)) return memo.get(this);
-    if (visiting.contains(this))
-      throw new IllegalStateException("Cycle detected in network at " + name);
-    visiting.add(this);
-
-    int maxUp = 0;
-    for (WaterNode in : inflows) {
-      int t = in.computeMaxAccumulatedLag(memo, visiting);
-      if (t > maxUp) maxUp = t;
-    }
-    int total = localLagDays() + maxUp;
-    memo.put(this, total);
-    visiting.remove(this);
-    return total;
-  }
-
-  /** Convenience: maximum accumulated lag (this node + upstream). */
-  protected int maxAccumulatedLag() {
-    return computeMaxAccumulatedLag(new HashMap<>(), new HashSet<>());
-  }
+  protected abstract int localLagDays(int day);
 
   /**
    * Recursive helper that supports memoization to avoid repeated work when
    * multiple downstream nodes query the same upstream node.
    */
-  protected double[] calculateWithMemo(double[] rainfall,
-                                       Map<WaterNode, double[]> memo) {
+  protected double[] calculateWithMemo(int days, double[] rainfall, Map<WaterNode, double[]> memo) {
     if (memo.containsKey(this)) return memo.get(this);
 
-    int extraLag = maxAccumulatedLag();
-    int outLen = rainfall.length + extraLag;
-    double[] out = new double[outLen];
+    double[] out = new double[days];
 
     // Sum upstream outflows (upstreams already include their own lags).
     for (WaterNode in : inflows) {
-      double[] inOut = in.calculateWithMemo(rainfall, memo);
+      double[] inOut = in.calculateWithMemo(days, rainfall, memo);
       for (int i = 0; i < inOut.length; i++) out[i] += inOut[i];
     }
 

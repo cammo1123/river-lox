@@ -286,7 +286,19 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
     resolve(function.body);
     endScope();
-	currentFunction = enclosingFunction;
+    currentFunction = enclosingFunction;
+  }
+
+  @Override
+  public Void visitLambdaExpr(Expr.Lambda expr) {
+    beginScope();
+    for (Token param : expr.params) {
+      declare(param);
+      define(param);
+    }
+    resolve(expr.body);
+    endScope();
+    return null;
   }
 
   private void beginScope() {

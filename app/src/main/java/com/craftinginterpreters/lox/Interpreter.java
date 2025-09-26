@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   final Environment globals = new Environment();
@@ -71,14 +70,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       public Object call(Interpreter interpreter, List<Object> arguments) {
         Object arg = arguments.get(0);
         if (!(arg instanceof Double)) {
-          // TODO: ERROR CATCHING
           return null;
         }
 
         try {
           Thread.sleep(((Double) arg).intValue());
         } catch (InterruptedException err) {
-          // TODO: ERROR CATCHING
           return null;
         }
         return null;
@@ -490,12 +487,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     String name = stmt.name.lexeme;
     NativeWaterNode node;
     if (stmt.kind.type == TokenType.RIVER) {
-      double area = getNumericProp(stmt, "area"); // expected in sqkm (UnitVal OK)
-      int lag = (int) getNumericProp(stmt, "lag"); // plain number expected
-      node = new NativeWaterNode(new River(name, area, lag));
+      LoxCallable area  = getLambda(stmt, "area", 0);
+      LoxCallable lag   = getLambda(stmt, "lag",  1);
+      node = new NativeWaterNode(new River(this, name, area, lag));
     } else if (stmt.kind.type == TokenType.DAM) {
-      double flowPercent = getNumericProp(stmt, "flow_percent");
-      node = new NativeWaterNode(new Dam(name, flowPercent));
+      LoxCallable flowPercent = getLambda(stmt, "flow_percent", 0);
+      node = new NativeWaterNode(new Dam(this, name, flowPercent));
     } else {
       throw new RuntimeError(stmt.name, "Unknown node kind.");
     }
@@ -514,14 +511,47 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     return null;
   }
 
-  private double getNumericProp(Stmt.NodeDecl stmt, String key) {
+  private LoxCallable getLambda(Stmt.NodeDecl stmt, String key, int expectedArgs) {
     Expr e = stmt.props.get(key);
     if (e == null) {
       throw new RuntimeError(stmt.name, "Missing property '" + key + "'.");
     }
+
     Object v = evaluate(e);
-    if (v instanceof Double d) return d;
-    if (v instanceof UnitVal uv) return uv.asDouble(); // already canonical
-    throw new RuntimeError(stmt.name, "Property '" + key + "' must be number or unit value.");
+    if (v instanceof UnitVal || v instanceof Double) {
+      double val;
+      if (v instanceof UnitVal uv)
+        val = uv.asDouble();
+      else
+        val = (Double) v;
+
+      return new LoxCallable() {
+        @Override
+        public int arity() { return expectedArgs; }
+
+        @Override
+        public Object call(Interpreter interpreter, List<Object> arguments) {
+          return val;
+        }
+        
+        @Override
+        public String toString() { return "<const " + val + ">"; }
+      };
+    }
+
+    // Already callable (lambda or function)
+    if (v instanceof LoxCallable f) {
+      if (f.arity() != expectedArgs) {
+        throw new RuntimeError(stmt.name, "Property '" + key + "' must be a " + expectedArgs + " argument lambda or number.");
+      }
+      return f;
+    }
+
+    throw new RuntimeError(stmt.name, "Property '" + key + "' must be number, unit, or a " + expectedArgs + " arg lambda.");
+  }
+
+  @Override
+  public Object visitLambdaExpr(Expr.Lambda expr) {
+    return new LoxFunction(expr.params, expr.body, environment);
   }
 }
