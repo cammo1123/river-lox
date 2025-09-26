@@ -147,6 +147,31 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return "<native fn>";
       }
     });
+
+	globals.define("clamp", new LoxCallable() {
+      @Override
+      public int arity() {
+        return 3;
+      }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        Object arg1 = arguments.get(0);
+        Object arg2 = arguments.get(1);
+        Object arg3 = arguments.get(2);
+
+        if (arg1 instanceof Double val && arg2 instanceof Double min && arg3 instanceof Double max) {
+          return Math.clamp(val, min, max);
+        }
+
+        return null;
+      }
+
+      @Override
+      public String toString() {
+        return "<native fn>";
+      }
+    });
   }
 
   @Override
