@@ -3,10 +3,11 @@ package com.craftinginterpreters.lox;
 import static com.craftinginterpreters.lox.TokenType.*;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 class Parser {
   private static class ParseError extends RuntimeException {}
@@ -27,7 +28,8 @@ class Parser {
 
   private Stmt declaration() {
     try {
-      if (match(VAR)) return varDeclaration();
+      if (match(VAR))
+        return varDeclaration();
 
       return statement();
     } catch (ParseError error) {
@@ -63,46 +65,60 @@ class Parser {
     consume(TokenType.LEFT_PAREN, "Expect '(' before parameters.");
     List<Token> parameters = new ArrayList<>();
     if (!check(TokenType.RIGHT_PAREN)) {
-        do {
-            parameters.add(consume(IDENTIFIER, "Expect parameter name."));
-        } while (match(COMMA));
+      do {
+        parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+      } while (match(COMMA));
     }
     consume(RIGHT_PAREN, "Expect ')' after parameters.");
     consume(ARROW, "Expect '=>' after parameters.");
 
     List<Stmt> body = new ArrayList<>();
     if (match(LEFT_BRACE)) {
-        body = block();
+      body = block();
     } else {
-        Expr value = expression();
-        body.add(new Stmt.Return(new Token(TokenType.RETURN, "return", null, -1), value));
+      Expr value = expression();
+      body.add(new Stmt.Return(new Token(TokenType.RETURN, "return", null, -1),
+                               value));
     }
     return new Expr.Lambda(parameters, body);
   }
 
   private Stmt statement() {
     // New hydrology constructs
-    if (match(RIVER)) return nodeDeclaration(previous());
-    if (match(DAM)) return nodeDeclaration(previous());
-    if (check(IDENTIFIER) && checkNext(RSHIFT)) return edgeStatement();
+    if (match(RIVER))
+      return nodeDeclaration(previous());
+    if (match(DAM))
+      return nodeDeclaration(previous());
+    if (check(IDENTIFIER) && checkNext(RSHIFT))
+      return edgeStatement();
 
-    if (match(CLASS)) return classDeclaration();
-    if (match(FUN)) return function("function");
-    if (match(FOR)) return forStatement();
-    if (match(IF)) return ifStatement();
-    if (match(PRINT)) return printStatement();
-    if (match(RETURN)) return returnStatement();
-    if (match(WHILE)) return whileStatement();
-    if (match(LEFT_BRACE)) return new Stmt.Block(block());
+    if (match(CLASS))
+      return classDeclaration();
+    if (match(FUN))
+      return function("function");
+    if (match(FOR))
+      return forStatement();
+    if (match(IF))
+      return ifStatement();
+    if (match(PRINT))
+      return printStatement();
+    if (match(RETURN))
+      return returnStatement();
+    if (match(WHILE))
+      return whileStatement();
+    if (match(LEFT_BRACE))
+      return new Stmt.Block(block());
 
     return expressionStatement();
   }
 
   private Stmt nodeDeclaration(Token kindToken) {
     // kindToken.type is RIVER or DAM
-    Token name = consume(IDENTIFIER, "Expect " + (kindToken.type == RIVER ? "river" : "dam") + " name.");
+    Token name = consume(
+        IDENTIFIER,
+        "Expect " + (kindToken.type == RIVER ? "river" : "dam") + " name.");
     consume(LEFT_BRACE, "Expect '{' after name.");
-  
+
     Map<String, Expr> props = new HashMap<>();
     if (!check(RIGHT_BRACE)) {
       while (true) {
@@ -110,11 +126,13 @@ class Parser {
         consume(COLON, "Expect ':' after property name.");
         Expr value = expression();
         props.put(key.lexeme, value);
-        if (!match(COMMA)) break;      // no comma → end of list
-        if (check(RIGHT_BRACE)) break; // allow trailing comma
+        if (!match(COMMA))
+          break; // no comma → end of list
+        if (check(RIGHT_BRACE))
+          break; // allow trailing comma
       }
     }
-  
+
     consume(RIGHT_BRACE, "Expect '}' after properties.");
     consume(SEMICOLON, "Expect ';' after declaration.");
     return new Stmt.NodeDecl(kindToken, name, props);
@@ -125,7 +143,8 @@ class Parser {
     Token arrow = consume(RSHIFT, "Expect '>>'.");
     Token toName = consume(IDENTIFIER, "Expect downstream name.");
     consume(SEMICOLON, "Expect ';' after connection.");
-    return new Stmt.Edge(new Expr.Variable(fromName), arrow, new Expr.Variable(toName));
+    return new Stmt.Edge(new Expr.Variable(fromName), arrow,
+                         new Expr.Variable(toName));
   }
 
   private Stmt returnStatement() {
@@ -165,13 +184,12 @@ class Parser {
     Stmt body = statement();
 
     if (increment != null) {
-      body = new Stmt.Block(
-          Arrays.asList(
-              body,
-              new Stmt.Expression(increment)));
+      body =
+          new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
     }
 
-    if (condition == null) condition = new Expr.Literal(true);
+    if (condition == null)
+      condition = new Expr.Literal(true);
     body = new Stmt.While(condition, body);
 
     if (initializer != null) {
@@ -184,7 +202,7 @@ class Parser {
   private Stmt ifStatement() {
     consume(LEFT_PAREN, "Expect '(' after 'if'.");
     Expr condition = expression();
-    consume(RIGHT_PAREN, "Expect ')' after if condition."); 
+    consume(RIGHT_PAREN, "Expect ')' after if condition.");
 
     Stmt thenBranch = statement();
     Stmt elseBranch = null;
@@ -245,7 +263,7 @@ class Parser {
         return new Expr.Set(get.object, get.name, value);
       }
 
-      error(equals, "Invalid assignment target."); 
+      error(equals, "Invalid assignment target.");
     }
 
     return expr;
@@ -380,7 +398,7 @@ class Parser {
   private Expr call() {
     Expr expr = primary();
 
-    while (true) { 
+    while (true) {
       if (match(LEFT_PAREN)) {
         expr = finishCall(expr);
       } else if (match(DOT)) {
@@ -395,9 +413,9 @@ class Parser {
   }
 
   private Expr primary() {
-    if (match(MEASURE)) 
+    if (match(MEASURE))
       return new Expr.Literal(previous().literal);
-    if (match(LEFT_BRACKET)) 
+    if (match(LEFT_BRACKET))
       return arrayLiteral();
     if (match(FALSE))
       return new Expr.Literal(false);
@@ -417,9 +435,12 @@ class Parser {
       return new Expr.Super(keyword, method);
     }
 
-    if (match(THIS)) return new Expr.This(previous());
-    if (match(IDENTIFIER)) return new Expr.Variable(previous());
-    if (isLambdaStart()) return lambda();
+    if (match(THIS))
+      return new Expr.This(previous());
+    if (match(IDENTIFIER))
+      return new Expr.Variable(previous());
+    if (isLambdaStart())
+      return lambda();
 
     if (match(LEFT_PAREN)) {
       Expr expr = expression();
@@ -432,17 +453,21 @@ class Parser {
 
   private boolean isLambdaStart() {
     int i = 0;
-    if (!checkAhead(i, TokenType.LEFT_PAREN)) return false;
+    if (!checkAhead(i, TokenType.LEFT_PAREN))
+      return false;
     i++;
 
     // Skip optional parameters
     while (checkAhead(i, TokenType.IDENTIFIER)) {
       i++;
-      if (checkAhead(i, TokenType.COMMA)) i++;
-      else break;
+      if (checkAhead(i, TokenType.COMMA))
+        i++;
+      else
+        break;
     }
 
-    if (!checkAhead(i, TokenType.RIGHT_PAREN)) return false;
+    if (!checkAhead(i, TokenType.RIGHT_PAREN))
+      return false;
     i++;
 
     // Must be followed by ->
@@ -450,14 +475,17 @@ class Parser {
   }
 
   private boolean checkAhead(int offset, TokenType type) {
-    if (current + offset >= tokens.size()) return false;
+    if (current + offset >= tokens.size())
+      return false;
     return tokens.get(current + offset).type == type;
   }
 
   private Expr arrayLiteral() {
     List<Expr> elements = new ArrayList<>();
     if (!check(RIGHT_BRACKET)) {
-      do { elements.add(expression()); } while (match(COMMA));
+      do {
+        elements.add(expression());
+      } while (match(COMMA));
     }
     consume(RIGHT_BRACKET, "Expect ']' after array literal.");
     return new Expr.Array(elements);
@@ -528,8 +556,10 @@ class Parser {
   }
 
   private boolean checkNext(TokenType type) {
-    if (isAtEnd()) return false;
-    if (current + 1 >= tokens.size()) return false;
+    if (isAtEnd())
+      return false;
+    if (current + 1 >= tokens.size())
+      return false;
     return tokens.get(current + 1).type == type;
   }
 }

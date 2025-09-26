@@ -8,8 +8,7 @@ public class Dam extends WaterNode {
   // Lox callable: (curr_vol) => volAsOutflow
   private final LoxCallable outFlow;
 
-  public Dam(
-      Interpreter interpreter, String name, LoxCallable outFlow) {
+  public Dam(Interpreter interpreter, String name, LoxCallable outFlow) {
     super(interpreter, name);
     this.outFlow = outFlow;
   }
@@ -20,16 +19,13 @@ public class Dam extends WaterNode {
   }
 
   @Override
-  protected NodeOutputs doCalculateDetailed(
-      int days,
-      double[] rainfall,
-      Set<WaterNode> visiting,
-      DetailedResult res) {
+  protected NodeOutputs doCalculateDetailed(int days, double[] rainfall,
+                                            Set<WaterNode> visiting,
+                                            DetailedResult res) {
     // Gather upstream per-edge outflows.
     List<double[]> upstreamPerEdge = new ArrayList<>(inflows.size());
     for (WaterNode in : inflows) {
-      NodeOutputs child =
-          evalChildDetailed(in, days, rainfall, visiting, res);
+      NodeOutputs child = evalChildDetailed(in, days, rainfall, visiting, res);
       upstreamPerEdge.add(child.perEdgeOut);
     }
 
@@ -44,7 +40,8 @@ public class Dam extends WaterNode {
       double incoming = 0.0;
       for (int k = 0; k < upstreamPerEdge.size(); k++) {
         double[] inOut = upstreamPerEdge.get(k);
-        if (day < inOut.length) incoming += inOut[day];
+        if (day < inOut.length)
+          incoming += inOut[day];
       }
 
       // Current available volume before release.
@@ -67,7 +64,8 @@ public class Dam extends WaterNode {
     double[] perEdgeOut;
     if (branches > 1) {
       perEdgeOut = new double[days];
-      for (int i = 0; i < days; i++) perEdgeOut[i] = totalOut[i] / branches;
+      for (int i = 0; i < days; i++)
+        perEdgeOut[i] = totalOut[i] / branches;
     } else {
       perEdgeOut = totalOut.clone();
     }
@@ -80,15 +78,13 @@ public class Dam extends WaterNode {
     double out;
     if (flowObj instanceof Double d) {
       out = d;
-    } else if (flowObj instanceof UnitVal uv) {
-      // Interpret as ML
-      out = uv.asDouble();
     } else {
       throw new RuntimeError(
-          new Token(TokenType.EOF, name, (Object) null, 0),
+          new Token(TokenType.EOF, name, (Object)null, 0),
           "Property 'out_flow' must be a function returning a number.");
     }
-    if (Double.isNaN(out) || Double.isInfinite(out)) return 0.0;
+    if (Double.isNaN(out) || Double.isInfinite(out))
+      return 0.0;
     return out;
   }
 

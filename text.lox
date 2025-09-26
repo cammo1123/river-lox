@@ -26,7 +26,7 @@ fun catchment_area2() {
 	river central_molongolo	{ area: 1sqkm, lag: 2 };
 	river lower_molongolo	{ area: 1sqkm, lag: 4 };
 
-	dam dam_1 { out_flow: (current_volume) => { return 5; } };
+	dam dam_1 { out_flow: (current_volume) => { return 5L; } };
 
 	upper_molongolo >> central_molongolo;
 	central_molongolo >> lower_molongolo;
@@ -38,5 +38,19 @@ fun catchment_area2() {
 	print "====== End Catchment Area 2 ======";
 }
 
+fun catchment_area3() {
+	river lower_molongolo	{ area: 1sqkm, lag: 1 };
+
+	dam dam_1 { out_flow: (current_volume) => { return max(current_volume * 0.5, 5L); } };
+
+	lower_molongolo >> dam_1;
+
+	print "======   Catchment Area 3   ======";
+	print dam_1.tree;
+	print dam_1.calculate(20, [10]);
+	print "====== End Catchment Area 3 ======";
+}
+
 catchment_area1();
 catchment_area2();
+catchment_area3();

@@ -11,7 +11,6 @@ import java.util.Set;
 public abstract class WaterNode {
   protected final String name;
   protected final List<WaterNode> inflows = new ArrayList<>();
-  // Track downstreams to support splitting.
   protected final List<WaterNode> outflows = new ArrayList<>();
   protected final Interpreter interpreter;
 
@@ -21,14 +20,13 @@ public abstract class WaterNode {
   }
 
   public void addInflow(WaterNode upstream) {
-    if (upstream == null) throw new IllegalArgumentException("upstream null");
+    if (upstream == null)
+      throw new IllegalArgumentException("upstream null");
     inflows.add(upstream);
-    upstream.outflows.add(this); // register downstream link
+    upstream.outflows.add(this);
   }
 
-  public boolean isLeaf() {
-    return inflows.isEmpty();
-  }
+  public boolean isLeaf() { return inflows.isEmpty(); }
 
   /**
    * Public calculate entry; returns total outflow time-series for this node.
@@ -37,7 +35,8 @@ public abstract class WaterNode {
   public double[] calculate(int days, double[] rainfall) {
     DetailedResult res = calculateDetailed(days, rainfall);
     double[] out = res.totalOutByNode.get(this);
-    if (out == null) return new double[days];
+    if (out == null)
+      return new double[days];
     return out;
   }
 
@@ -46,7 +45,8 @@ public abstract class WaterNode {
    * (backlog) within each node. No memoization, cycle-safe.
    */
   public DetailedResult calculateDetailed(int days, double[] rainfall) {
-    if (rainfall == null) throw new IllegalArgumentException("rainfall null");
+    if (rainfall == null)
+      throw new IllegalArgumentException("rainfall null");
     Set<WaterNode> visiting = new HashSet<>();
     DetailedResult res = new DetailedResult();
     evaluateDetailed(days, rainfall, visiting, res);
@@ -54,19 +54,17 @@ public abstract class WaterNode {
   }
 
   // Cycle-safe detailed evaluation wrapper.
-  protected final NodeOutputs evaluateDetailed(
-      int days,
-      double[] rainfall,
-      Set<WaterNode> visiting,
-      DetailedResult res) {
+  protected final NodeOutputs evaluateDetailed(int days, double[] rainfall,
+                                               Set<WaterNode> visiting,
+                                               DetailedResult res) {
     if (!visiting.add(this)) {
-      throw new RuntimeError(
-          new Token(TokenType.EOF, name, (Object) null, 0),
-          "Cycle detected at node '" + name + "'.");
+      throw new RuntimeError(new Token(TokenType.EOF, name, (Object)null, 0),
+                             "Cycle detected at node '" + name + "'.");
     }
     NodeOutputs outs = doCalculateDetailed(days, rainfall, visiting, res);
 
-    double[] totalOut = outs.totalOut == null ? new double[days] : outs.totalOut;
+    double[] totalOut =
+        outs.totalOut == null ? new double[days] : outs.totalOut;
     double[] backlog = outs.backlog == null ? new double[days] : outs.backlog;
     res.totalOutByNode.put(this, totalOut);
     res.volumeByNode.put(this, backlog);
@@ -76,12 +74,10 @@ public abstract class WaterNode {
   }
 
   // Helper to evaluate a child node in detailed mode.
-  protected final NodeOutputs evalChildDetailed(
-      WaterNode node,
-      int days,
-      double[] rainfall,
-      Set<WaterNode> visiting,
-      DetailedResult res) {
+  protected final NodeOutputs evalChildDetailed(WaterNode node, int days,
+                                                double[] rainfall,
+                                                Set<WaterNode> visiting,
+                                                DetailedResult res) {
     return node.evaluateDetailed(days, rainfall, visiting, res);
   }
 
@@ -89,9 +85,7 @@ public abstract class WaterNode {
     return getClass().getSimpleName().charAt(0) + ": " + name;
   }
 
-  protected int downstreamCount() {
-    return outflows.size();
-  }
+  protected int downstreamCount() { return outflows.size(); }
 
   /** Node-specific lag in days (rivers override, dams return 0). */
   protected abstract int localLagDays(int day);
@@ -102,11 +96,10 @@ public abstract class WaterNode {
    * - perEdgeOut: the outflow per downstream edge (post-split),
    *   which is what downstream nodes should receive.
    */
-  protected abstract NodeOutputs doCalculateDetailed(
-      int days,
-      double[] rainfall,
-      Set<WaterNode> visiting,
-      DetailedResult res);
+  protected abstract NodeOutputs doCalculateDetailed(int days,
+                                                     double[] rainfall,
+                                                     Set<WaterNode> visiting,
+                                                     DetailedResult res);
 
   public String tree() {
     StringBuilder sb = new StringBuilder();
@@ -127,8 +120,8 @@ public abstract class WaterNode {
     return sb.toString();
   }
 
-  protected void tree(
-      StringBuilder sb, String prefix, boolean isTail, Set<WaterNode> visited) {
+  protected void tree(StringBuilder sb, String prefix, boolean isTail,
+                      Set<WaterNode> visited) {
     if (visited.contains(this)) {
       sb.append(prefix)
           .append(isTail ? "\\\\-- " : "|-- ")
@@ -148,8 +141,7 @@ public abstract class WaterNode {
     while (it.hasNext()) {
       WaterNode child = it.next();
       boolean last = !it.hasNext();
-      child.tree(
-          sb, prefix + (isTail ? "    " : "|   "), last, visited);
+      child.tree(sb, prefix + (isTail ? "    " : "|   "), last, visited);
     }
     visited.remove(this);
   }

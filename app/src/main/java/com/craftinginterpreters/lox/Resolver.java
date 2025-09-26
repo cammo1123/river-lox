@@ -93,7 +93,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     resolveFunction(stmt, FunctionType.FUNCTION);
     return null;
   }
-  
+
   @Override
   public Void visitLambdaExpr(Expr.Lambda expr) {
     FunctionType enclosingFunction = currentFunction;
@@ -299,7 +299,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     endScope();
     currentFunction = enclosingFunction;
   }
-
 
   private void beginScope() { scopes.push(new HashMap<String, Boolean>()); }
 

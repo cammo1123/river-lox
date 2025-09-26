@@ -6,8 +6,8 @@ public final class PrintableTable {
   private final String[] headers;
   private final String[] cells;
 
-  public PrintableTable(String firstColLabel, String rowLabel,
-                        String[] headers, String[] cells) {
+  public PrintableTable(String firstColLabel, String rowLabel, String[] headers,
+                        String[] cells) {
     if (headers == null || cells == null) {
       throw new IllegalArgumentException("headers and cells must be non-null");
     }
@@ -23,10 +23,8 @@ public final class PrintableTable {
 
   // Convenience constructor: formats doubles with unit (int vs 2-decimals)
   public static PrintableTable fromDoubles(String firstColLabel,
-                                           String rowLabel,
-                                           String[] headers,
-                                           double[] values,
-                                           String unit) {
+                                           String rowLabel, String[] headers,
+                                           double[] values, String unit) {
     if (headers == null || values == null) {
       throw new IllegalArgumentException("headers and values non-null");
     }
@@ -82,45 +80,60 @@ public final class PrintableTable {
     return sb.toString();
   }
 
-  @Override public String toString() { return render(); }
+  @Override
+  public String toString() {
+    return render();
+  }
 
   private static String padRight(String s, int w) {
-    if (s == null) s = "";
+    if (s == null)
+      s = "";
     int pad = w - s.length();
-    if (pad <= 0) return s;
+    if (pad <= 0)
+      return s;
     StringBuilder b = new StringBuilder(w);
     b.append(s);
-    for (int i = 0; i < pad; i++) b.append(' ');
+    for (int i = 0; i < pad; i++)
+      b.append(' ');
     return b.toString();
   }
 
   private static String padLeft(String s, int w) {
-    if (s == null) s = "";
+    if (s == null)
+      s = "";
     int pad = w - s.length();
-    if (pad <= 0) return s;
+    if (pad <= 0)
+      return s;
     StringBuilder b = new StringBuilder(w);
-    for (int i = 0; i < pad; i++) b.append(' ');
+    for (int i = 0; i < pad; i++)
+      b.append(' ');
     b.append(s);
     return b.toString();
   }
 
   private static String padCenter(String s, int w) {
-    if (s == null) s = "";
+    if (s == null)
+      s = "";
     int pad = w - s.length();
-    if (pad <= 0) return s;
+    if (pad <= 0)
+      return s;
     int left = pad / 2;
     int right = pad - left;
     StringBuilder b = new StringBuilder(w);
-    for (int i = 0; i < left; i++) b.append(' ');
+    for (int i = 0; i < left; i++)
+      b.append(' ');
     b.append(s);
-    for (int i = 0; i < right; i++) b.append(' ');
+    for (int i = 0; i < right; i++)
+      b.append(' ');
     return b.toString();
   }
 
   private static String repeat(char c, int n) {
-    if (n <= 0) return "";
+    if (n <= 0)
+      return "";
     StringBuilder b = new StringBuilder(n);
-    for (int i = 0; i < n; i++) b.append(c);
+    for (int i = 0; i < n; i++)
+      b.append(c);
     return b.toString();
   }
 }

@@ -1,16 +1,17 @@
 package com.craftinginterpreters.lox;
 
+import com.craftinginterpreters.lox.UnitVal.Unit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
 
 class River extends WaterNode {
   private final LoxCallable area;
   private final LoxCallable lagDays;
 
-  public River(
-      Interpreter interpreter, String name, LoxCallable area,
-      LoxCallable lagDays) {
+  public River(Interpreter interpreter, String name, LoxCallable area,
+               LoxCallable lagDays) {
     super(interpreter, name);
     this.area = area;
     this.lagDays = lagDays;
@@ -21,19 +22,17 @@ class River extends WaterNode {
     if (areaObject instanceof Double calcArea) {
       return calcArea;
     }
-    throw new RuntimeError(
-        new Token(TokenType.EOF, name, (Object) null, 0),
-        "Property 'area' must return a number.");
+    throw new RuntimeError(new Token(TokenType.EOF, name, (Object)null, 0),
+                           "Property 'area' must return a number.");
   }
 
   public int getLagDays(int day) {
-    Object lagObject = lagDays.call(interpreter, List.of((double) day));
+    Object lagObject = lagDays.call(interpreter, List.of((double)day));
     if (lagObject instanceof Double calcLag) {
       return Math.max(0, calcLag.intValue());
     }
-    throw new RuntimeError(
-        new Token(TokenType.EOF, name, (Object) null, 0),
-        "Property 'lag' must return a number.");
+    throw new RuntimeError(new Token(TokenType.EOF, name, (Object)null, 0),
+                           "Property 'lag' must return a number.");
   }
 
   @Override
@@ -42,16 +41,13 @@ class River extends WaterNode {
   }
 
   @Override
-  protected NodeOutputs doCalculateDetailed(
-      int days,
-      double[] rainfall,
-      Set<WaterNode> visiting,
-      DetailedResult res) {
+  protected NodeOutputs doCalculateDetailed(int days, double[] rainfall,
+                                            Set<WaterNode> visiting,
+                                            DetailedResult res) {
     // Gather upstream per-edge outflows.
     List<double[]> upstreamPerEdge = new ArrayList<>(inflows.size());
     for (WaterNode in : inflows) {
-      NodeOutputs child =
-          evalChildDetailed(in, days, rainfall, visiting, res);
+      NodeOutputs child = evalChildDetailed(in, days, rainfall, visiting, res);
       upstreamPerEdge.add(child.perEdgeOut);
     }
 
@@ -76,13 +72,14 @@ class River extends WaterNode {
       // Local rainfall contribution at this node.
       if (day < rainfall.length) {
         // mm * km^2 => ML
-        incoming += rainfall[day] * areaVal;
+        incoming +=
+            UnitVal.of((rainfall[day] * areaVal), Unit.MEGALITER).asCanonical();
       }
 
       // Apply node's lag to total incoming.
       int lag = localLagDays(day);
       int idx = day + lag;
-      
+
       if (idx < days) {
         totalOut[idx] += incoming;
         if (lag > 0) {
@@ -102,7 +99,8 @@ class River extends WaterNode {
     double[] perEdgeOut;
     if (branches > 1) {
       perEdgeOut = new double[days];
-      for (int i = 0; i < days; i++) perEdgeOut[i] = totalOut[i] / branches;
+      for (int i = 0; i < days; i++)
+        perEdgeOut[i] = totalOut[i] / branches;
     } else {
       perEdgeOut = totalOut.clone();
     }

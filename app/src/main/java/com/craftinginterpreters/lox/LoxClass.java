@@ -45,7 +45,8 @@ class LoxClass implements LoxCallable {
   @Override
   public int arity() {
     LoxFunction initializer = findMethod("init");
-    if (initializer == null) return 0;
+    if (initializer == null)
+      return 0;
     return initializer.arity();
   }
 }

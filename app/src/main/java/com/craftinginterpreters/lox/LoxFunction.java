@@ -9,7 +9,8 @@ class LoxFunction implements LoxCallable {
   private final boolean isInitializer;
   private final String name;
 
-  LoxFunction(Stmt.Function declaration, Environment closure, boolean isInitializer) {
+  LoxFunction(Stmt.Function declaration, Environment closure,
+              boolean isInitializer) {
     this.params = declaration.params;
     this.body = declaration.body;
     this.name = declaration.name.lexeme;
@@ -35,7 +36,8 @@ class LoxFunction implements LoxCallable {
     return new LoxFunction(params, body, environment);
   }
 
-  private LoxFunction(List<Token> params, List<Stmt> body, Environment closure, boolean isInitializer, String name) {
+  private LoxFunction(List<Token> params, List<Stmt> body, Environment closure,
+                      boolean isInitializer, String name) {
     this.params = params;
     this.body = body;
     this.closure = closure;

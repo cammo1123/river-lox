@@ -7,22 +7,18 @@ class Environment {
   final Environment enclosing;
   private final Map<String, Object> values = new HashMap<>();
 
-  Environment() {
-    enclosing = null;
-  }
+  Environment() { enclosing = null; }
 
-  Environment(Environment enclosing) {
-    this.enclosing = enclosing;
-  }
+  Environment(Environment enclosing) { this.enclosing = enclosing; }
 
   Object get(Token name) {
     if (values.containsKey(name.lexeme)) {
       return values.get(name.lexeme);
     }
 
-	if (enclosing != null) {
-		return enclosing.get(name);
-	}
+    if (enclosing != null) {
+      return enclosing.get(name);
+    }
 
     throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
   }
@@ -33,7 +29,7 @@ class Environment {
       return;
     }
 
-	if (enclosing != null) {
+    if (enclosing != null) {
       enclosing.assign(name, value);
       return;
     }
@@ -41,14 +37,12 @@ class Environment {
     throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
   }
 
-  void define(String name, Object value) {
-    values.put(name, value);
-  }
+  void define(String name, Object value) { values.put(name, value); }
 
   Environment ancestor(int distance) {
     Environment environment = this;
     for (int i = 0; i < distance; i++) {
-      environment = environment.enclosing; 
+      environment = environment.enclosing;
     }
 
     return environment;
