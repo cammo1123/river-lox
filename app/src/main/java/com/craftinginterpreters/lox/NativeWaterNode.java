@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
 class NativeWaterNode {
   final WaterNode node;
 
@@ -78,23 +77,28 @@ class NativeWaterNode {
           sb.append(renderDivider(volumeRowWidths, '=')).append('\n');
 
           // Outflow section (root node total outflow)
-          double[] rootOut =
-              res.totalOutByNode.getOrDefault(node, new double[daysToSim]);
+          double[] rootOut = res.totalOutByNode.getOrDefault(node, new double[daysToSim]);
+          double[] rootBacklog = res.volumeByNode.getOrDefault(node, new double[daysToSim]);
 
           // Compute col width for day numbers and values
           int dayNumWidth = Math.max(2, String.valueOf(daysToSim).length());
           int valWidth = 0;
           List<String> outVals = new ArrayList<>();
+          List<String> storeVals = new ArrayList<>();
           for (int d = 0; d < daysToSim; d++) {
             String v = UnitVal.ofCanonical(rootOut[d], Kind.VOLUME).toString();
+            String s = UnitVal.ofCanonical(rootBacklog[d], Kind.VOLUME).toString();
             outVals.add(v);
-            valWidth = Math.max(valWidth, v.length());
+            storeVals.add(s);
+            valWidth = Math.max(valWidth, Math.max(v.length(), s.length()));
           }
           int cellWidth = Math.max(dayNumWidth, valWidth);
 
-          // Table widths for outflow section: first col width 7, then N cols.
-          List<Integer> outflowRowWidths =
-              joinWidths(7, repeatWidth(cellWidth, daysToSim));
+          // First column width sized for longest label among
+          // Day/Outflow/Storage
+          int firstLabelWidth = Math.max("Day".length(), Math.max("Outflow".length(), "Storage".length()));
+
+          List<Integer> outflowRowWidths = joinWidths(firstLabelWidth, repeatWidth(cellWidth, daysToSim));
           int outflowTableWidth = tableWidth(outflowRowWidths);
           sb.append(centerEquals(" Outflow ", outflowTableWidth)).append('\n');
 
@@ -113,6 +117,13 @@ class NativeWaterNode {
           outflowRow.add("Outflow");
           outflowRow.addAll(outVals);
           sb.append(renderRowLeftFirst(outflowRow, outflowRowWidths));
+
+          // Storage row (end-of-day dam volume)
+          List<String> storageRow = new ArrayList<>();
+          storageRow.add("Storage");
+          storageRow.addAll(storeVals);
+          sb.append(renderRowLeftFirst(storageRow, outflowRowWidths));
+
           sb.append(renderDivider(outflowRowWidths, '=')).append('\n');
 
           return sb.toString();

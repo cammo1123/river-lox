@@ -554,7 +554,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     String name = stmt.name.lexeme;
     NativeWaterNode node;
     if (stmt.kind.type == TokenType.RIVER) {
-      LoxCallable area = getLambda(stmt, "area", 0);
+      Double area = getDouble(stmt, "area");
       LoxCallable lag = getLambda(stmt, "lag", 1);
       node = new NativeWaterNode(new River(this, name, area, lag));
     } else if (stmt.kind.type == TokenType.DAM) {
@@ -577,6 +577,20 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
     ((NativeWaterNode)down).addInflow((NativeWaterNode)up);
     return null;
+  }
+
+  private Double getDouble(Stmt.NodeDecl stmt, String key) {
+	Expr e = stmt.props.get(key);
+    if (e == null) {
+      throw new RuntimeError(stmt.name, "Missing property '" + key + "'.");
+    }
+
+	Object v = evaluate(e);
+	if (v instanceof Double val) {
+		return val;
+	}
+
+	throw new RuntimeError(stmt.name, "Property '" + key +"' must be number or a unit");
   }
 
   private LoxCallable getLambda(Stmt.NodeDecl stmt, String key,

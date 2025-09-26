@@ -29,7 +29,7 @@ public final class UnitVal implements Comparable<UnitVal> {
     // AREA (canonical: sqkm)
     SQKM(Kind.AREA, "sqkm", 1.0, "km2", "km^2", "km²"),
     HA(Kind.AREA, "ha", 0.01, "hectare"),
-    SQM(Kind.AREA, "sqm", 1e-6, "m2", "m^2", "m²", "m"),
+    SQM(Kind.AREA, "sqm", 0.000001, "m2", "m^2", "m²", "m"),
 
     // VOLUME (canonical: L)
     MEGALITER(Kind.VOLUME, "ML", 10000.0, "megaliter", "megalitre"),
@@ -246,7 +246,24 @@ public final class UnitVal implements Comparable<UnitVal> {
   private static String fmt(double d) {
     if (Double.isNaN(d) || Double.isInfinite(d))
       return Double.toString(d);
-    BigDecimal bd = BigDecimal.valueOf(d).stripTrailingZeros();
-    return bd.toPlainString();
+
+    // Normalize/round to remove tiny floating-point noise that users don't want
+    // to see.
+    // - For |x| >= 1: round to 12 decimal places.
+    // - For |x| < 1: round to 12 significant digits.
+    BigDecimal bd = BigDecimal.valueOf(d);
+    BigDecimal rounded;
+    double abs = Math.abs(d);
+    if (abs >= 1.0) {
+      rounded = bd.setScale(12, java.math.RoundingMode.HALF_UP);
+    } else {
+      rounded = bd.round(
+          new java.math.MathContext(12, java.math.RoundingMode.HALF_UP));
+    }
+    rounded = rounded.stripTrailingZeros();
+    // If rounding produced -0, normalise to "0"
+    if (rounded.compareTo(BigDecimal.ZERO) == 0)
+      return "0";
+    return rounded.toPlainString();
   }
 }

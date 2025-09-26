@@ -1,30 +1,23 @@
 package com.craftinginterpreters.lox;
 
+import com.craftinginterpreters.lox.UnitVal.Kind;
 import com.craftinginterpreters.lox.UnitVal.Unit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-
 class River extends WaterNode {
-  private final LoxCallable area;
+  private final double area;
   private final LoxCallable lagDays;
 
-  public River(Interpreter interpreter, String name, LoxCallable area,
+  public River(Interpreter interpreter, String name, double area,
                LoxCallable lagDays) {
     super(interpreter, name);
     this.area = area;
     this.lagDays = lagDays;
   }
 
-  public double getArea() {
-    Object areaObject = area.call(interpreter, List.of());
-    if (areaObject instanceof Double calcArea) {
-      return calcArea;
-    }
-    throw new RuntimeError(new Token(TokenType.EOF, name, (Object)null, 0),
-                           "Property 'area' must return a number.");
-  }
+  public double getArea() { return area; }
 
   public int getLagDays(int day) {
     Object lagObject = lagDays.call(interpreter, List.of((double)day));
@@ -110,6 +103,8 @@ class River extends WaterNode {
 
   @Override
   protected String nodeLabel() {
-    return super.nodeLabel() + " [ area=" + area + ", lag=" + lagDays + " ]";
+    return super.nodeLabel() +
+        " [ area=" + UnitVal.ofCanonical(area, Kind.AREA).toString() +
+        ", lag=" + lagDays + " ]";
   }
 }
