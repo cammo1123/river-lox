@@ -2,16 +2,16 @@
 
 Run a file
 ```bash
-gradle run --args="../text.lox"
+clear; javac -d out src/lox/*.java; java -cp out lox.Lox <PATH_TO_FILE>
 ```
 
 Run in interactive mode
 
 ```bash
-gradle run
+clear; javac -d out src/lox/*.java; java -cp out lox.Lox
 ```
 
 Generate AST
 ```bash
-bash generate.sh
+clear; javac -d out src/tool/*.java; java -cp out tool.GenerateAst src/lox
 ```

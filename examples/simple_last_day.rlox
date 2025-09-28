@@ -1,0 +1,19 @@
+fun catchment_area2(simulation_days, rainfall) {
+	river upper_molongolo	{ area: 1sqm, flow_days: 2, flow_shape: Shape_LastDay };
+	river central_molongolo	{ area: 1sqm, flow_days: 3, flow_shape: Shape_LastDay };
+	river lower_molongolo	{ area: 1sqm, flow_days: 5, flow_shape: Shape_LastDay };
+
+	dam dam_1 { out_flow: (current_volume) => { return 5L; } };
+
+	upper_molongolo >> central_molongolo;
+	central_molongolo >> lower_molongolo;
+	lower_molongolo >> dam_1;
+
+	print "Simulated " + simulation_days + " day(s) with rainfall(mm): " + rainfall;
+	print "";
+	print dam_1.tree;
+	print dam_1.calculate(simulation_days, rainfall);
+	print "";
+}
+
+catchment_area2(20, [10mm]);

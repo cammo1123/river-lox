@@ -1,0 +1,14 @@
+fun catchment_area3(simulation_days, rainfall) {
+	river lower_molongolo	{ area: 1sqkm, flow_days: 2, flow_shape: Shape_LastDay };
+
+	dam dam_1 { out_flow: (current_volume) => { return max(current_volume * 0.8, 50L); } };
+
+	lower_molongolo >> dam_1;
+
+	print "Simulated " + simulation_days + " day(s) with rainfall(mm): " + rainfall;
+	print "";
+	print dam_1.tree;
+	print dam_1.calculate(simulation_days, rainfall);
+}
+
+catchment_area3(20, [10mm]);

@@ -1,1 +1,0 @@
-clear; javac -d build "app//src//main//java//com//craftinginterpreters//tool//GenerateAst.java"; java -cp build com.craftinginterpreters.tool.GenerateAst "app/src/main/java/com/craftinginterpreters/lox";

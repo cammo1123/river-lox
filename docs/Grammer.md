@@ -1,4 +1,10 @@
-# Original Lox (ch13):
+# Assignment 1
+
+## Team Contributions
+
+Team discussions gave me the idea for having notated units, I came up with the idea of "canonical units" that allows 1L and 1ml to be converted under the hood to the same unit.
+
+## Original Lox (ch13):
 
 ```
 program        → declaration* EOF ;
@@ -17,7 +23,7 @@ call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expr ")" | IDENTIFIER | "super" "." IDENTIFIER | "this"
 ```
 
-# With River-Lox Additions:
+## With River-Lox Additions:
 ```
 program        → declaration* EOF ;
 declaration    → nodeDecl | edgeStmt | varDecl | funDecl | classDecl | statement ;
@@ -41,10 +47,10 @@ lambda         → "(" parameters? ")" "=>" (expression | block)
 parameters     → IDENTIFIER ("," IDENTIFIER)*
 ```
 
-## Note
+### Note
 - `UnitVal` represents a value with a unit (e.g., area in sqkm, volume in L). These are converted to "canonical" units internally. When the scanner encounters one e.g(`2cm`). It converts it to a Number token with the value in canonical units (e.g., `20` for `2cm` as the canonical unit is `mm`).
 
-# Example River-Lox Code:
+## Example River-Lox Code:
 ```
 river River1 { 
 	area: 2.5sqm, 
@@ -69,7 +75,7 @@ var rainfall = [10mm, 0mm, 5mm, 0mm];
 print Dam1.calculate(8, rainfall);
 ```
 
-## Parsing steps
+### Parsing steps
 1. The parser starts by reading the `river` keyword, indicating the start of a river declaration.
 2. It then reads the identifier `River1`, which is the name of the river.
 3. The parser expects an opening curly brace `{` to denote the beginning of the river's properties.
@@ -91,7 +97,7 @@ print Dam1.calculate(8, rainfall);
 
 11. Finally, the parser reads the print statement `print Dam1.calculate(7, rainfall);`. It expects the `print` keyword, reads the expression `Dam1.calculate(7, rainfall)`, and expects a semicolon `;` to complete the statement.
 
-# Improvement to the Chapter 6 Lox code
+## Improvement to the Chapter 6 Lox code
 
 Everything including ch13 of Lox is included, plus:
   - Arrays (e.g., `[10mm, 0mm, 5mm, 0mm]`)
