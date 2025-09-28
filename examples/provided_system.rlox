@@ -1,0 +1,31 @@
+fun provided_system(simulation_days, rainfall) {
+    river googong { area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
+    river jerrabombarra { area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
+    river upper_molongolo { area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
+    river queanbeyan { area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
+    river central_molongolo { area: 30sqkm, flow_days: 5, flow_shape: Shape_Linear };
+    river lower_molongolo2 { area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
+
+    dam dam_1 { out_flow: (current_volume) => { return current_volume; } };
+    dam dam_2 { out_flow: (current_volume) => { return current_volume; } };
+
+    googong >> dam_1;
+    dam_1 >> queanbeyan;
+    central_molongolo >> dam_2;
+    dam_2 >> lower_molongolo2;
+
+    // Central molongolo is the combination of queanbeyan, upper molongolo, and jerrabombarra
+    queanbeyan >> central_molongolo;
+    upper_molongolo >> central_molongolo;
+    jerrabombarra >> central_molongolo;
+
+    print "======   Provided System   ======";
+    print "Simulated " + simulation_days + " day(s) with rainfall(mm): " + rainfall;
+    print "";
+    print lower_molongolo2.tree;
+    print lower_molongolo2.calculate(simulation_days, rainfall);
+    print "====== End Provided System ======";
+    print "";
+}
+
+provided_system(20, [10mm, 10mm, 10mm, 10mm]);

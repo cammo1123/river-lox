@@ -25,7 +25,6 @@ class River extends WaterNode {
   protected NodeOutputs doCalculateDetailed(int days, double[] rainfall,
                                             Set<WaterNode> visiting,
                                             DetailedResult res) {
-    // Gather upstream per-edge outflows.
     List<double[]> upstreamPerEdge = new ArrayList<>(inflows.size());
     for (WaterNode in : inflows) {
       NodeOutputs child = evalChildDetailed(in, days, rainfall, visiting, res);
@@ -37,16 +36,12 @@ class River extends WaterNode {
     double[] backlog = new double[days];
     double backlogSum = 0.0;
 
-    // number of days to consider from the flow shape
     int shapeLen = Math.max(1, (int) Math.ceil(flowDays));
-
+    
     for (int day = 0; day < days; day++) {
-      // Amount that was due today from previous scheduling.
       double prevDue = totalOut[day];
-
       double incoming = 0.0;
 
-      // Sum upstream outflows entering this node today (already split).
       for (int k = 0; k < upstreamPerEdge.size(); k++) {
         double[] inOut = upstreamPerEdge.get(k);
         if (day < inOut.length) {
@@ -54,46 +49,52 @@ class River extends WaterNode {
         }
       }
 
-      // Local rainfall contribution at this node.
       if (day < rainfall.length) {
-        // mm * km^2 => ML (canonical)
-        incoming += UnitVal.of((rainfall[day] * areaVal), Unit.MEGALITER).asCanonical();
+        // mm * km^2 * 1,000,000 => L (canonical)
+        incoming += UnitVal.of((rainfall[day] * areaVal * 1_000_000), Unit.L).asCanonical();
       }
 
-      // Distribute incoming across subsequent days according to flowShape.
+      double totalUsed = 0.0;
       for (int k = 0; k < shapeLen; k++) {
         int idx = day + k;
         if (idx >= days) {
-          // Outside simulation window: drop (consistent with prior behavior).
           continue;
         }
 
-        Object fracObj = flowShape.call(interpreter, List.of((double) k, flowDays));
-        if (!(fracObj instanceof Double f)) {
+        Object fracObj = flowShape.call(interpreter, List.of((double) k + 1, flowDays));
+        if (!(fracObj instanceof Double frac)) {
           throw new RuntimeError(
               new Token(TokenType.EOF, name, (Object) null, 0),
               "Property 'flow_shape' must return a number.");
         }
-        double frac = f;
+
         if (Double.isNaN(frac) || Double.isInfinite(frac)) {
+          frac = 0.0;
+        }
+
+        if (frac > 1) {
+          frac = 1.0;
+        }
+        
+        totalUsed += frac;
+        if (totalUsed > 1) {
           frac = 0.0;
         }
 
         double amount = incoming * frac;
         totalOut[idx] += amount;
 
-        // If this portion is scheduled for a future day (k > 0) and within
-        // the simulated horizon, count it toward backlog.
         if (k > 0) {
           backlogSum += amount;
         }
       }
 
-      // Remove what's due today from backlog (it is leaving storage now).
       backlogSum -= prevDue;
-      if (backlogSum < 0.0) backlogSum = 0.0; // guard against tiny negatives
+      if (backlogSum < 0.0) backlogSum = 0.0;
       backlog[day] = backlogSum;
     }
+
+
 
     // Split evenly across downstream outflows for propagation.
     int branches = Math.max(1, downstreamCount());

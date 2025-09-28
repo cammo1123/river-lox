@@ -1,0 +1,13 @@
+river River1 {
+	area: 10sqm,
+	flow_days: 1,
+	flow_shape: (day, maxDays) => { return 1; }
+};
+
+print "======   Catchment Area 4   ======";
+print "Simulated 1 day with rainfall 1mm";
+print "";
+print River1.tree;
+print River1.calculate(2, [1mm]);
+print "====== End Catchment Area 4 ======";
+print "";

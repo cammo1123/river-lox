@@ -210,43 +210,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object arg2 = arguments.get(1);
 
         if (arg1 instanceof Double day && arg2 instanceof Double maxDays) {
-          if (day + 1 == maxDays) {
+          if (day.equals(maxDays)) {
             return (double)1;
           }
 
           return (double)0;
-        }
-
-        return null;
-      }
-
-      @Override
-      public String toString() {
-        return "<native fn>";
-      }
-    });
-
-    globals.define("Shape_TriangularRising", new LoxCallable() {
-      @Override
-      public int arity() {
-        return 2;
-      }
-
-      @Override
-      public Object call(Interpreter interpreter, List<Object> arguments) {
-        Object arg1 = arguments.get(0);
-        Object arg2 = arguments.get(1);
-
-        if (arg1 instanceof Double dayD && arg2 instanceof Double maxDaysD) {
-          int n = Math.max(1, (int)Math.ceil(maxDaysD)); // number of slots
-          int day = dayD.intValue();
-          if (day < 0 || day >= n)
-            return (double)0;
-
-          // weight ∝ (day+1); normalization sum = n*(n+1)/2
-          double numerator = day + 1;
-          double denom = n * (n + 1) / 2.0;
-          return numerator / denom;
         }
 
         return null;

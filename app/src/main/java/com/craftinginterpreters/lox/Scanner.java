@@ -178,7 +178,7 @@ class Scanner {
     if (unitStart != current) {
       String unit = source.substring(unitStart, current);
       try {
-        UnitVal uv = UnitVal.parse(numeric + unit);
+        UnitVal uv = UnitVal.parse(numeric, unit);
         addToken(NUMBER, uv.asCanonical());
       } catch (IllegalArgumentException ex) {
         Lox.error(line, ex.getMessage());

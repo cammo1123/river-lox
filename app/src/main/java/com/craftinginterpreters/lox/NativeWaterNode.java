@@ -29,14 +29,9 @@ class NativeWaterNode {
           double[] rainfall = toDoubleArray(args.get(1), name);
           int daysToSim = ((Double)args.get(0)).intValue();
 
-          // Detailed run: collect outflows and per-day volumes for all nodes.
           WaterNode.DetailedResult res =
               node.calculateDetailed(daysToSim, rainfall);
-
-          // Build the "Volume" section for ALL rivers (not only leaves).
-          // Note: In cascades this double-counts if you sum columns.
           List<WaterNode> rivers = sortedRivers(res.volumeByNode);
-
           StringBuilder sb = new StringBuilder();
 
           // Determine column widths.
@@ -46,24 +41,19 @@ class NativeWaterNode {
           for (WaterNode r : rivers)
             headers.add(r.name);
 
-          // Pre-format ML values to size columns.
           List<List<String>> volCells =
               formatMlColumns(rivers, res.volumeByNode, daysToSim);
-
-          // Day width already set, compute others (for river columns).
           List<Integer> colWidths =
               computeColumnWidths(headers.subList(1, headers.size()), volCells);
 
-          // Build title centered with '=' fill across full row width.
           List<Integer> volumeRowWidths = joinWidths(dayColWidth, colWidths);
           int volumeTableWidth = tableWidth(volumeRowWidths);
-          sb.append(centerEquals(" Volume (End of day) ", volumeTableWidth))
+          sb.append(centerEquals("= Volume (After Outflow) =", volumeTableWidth))
               .append('\n');
 
-          // Print header row: DAY + river names
           sb.append(renderRow(headers, volumeRowWidths));
+          sb.append(renderDivider(volumeRowWidths, '_'));
 
-          // Rows per day (1..days)
           for (int d = 0; d < daysToSim; d++) {
             List<String> row = new ArrayList<>(1 + rivers.size());
             row.add(String.valueOf(d + 1));
@@ -73,56 +63,68 @@ class NativeWaterNode {
             sb.append(renderRow(row, volumeRowWidths));
           }
 
-          // Horizontal rule between sections
           sb.append(renderDivider(volumeRowWidths, '=')).append('\n');
 
-          // Outflow section (root node total outflow)
-          double[] rootOut = res.totalOutByNode.getOrDefault(node, new double[daysToSim]);
-          double[] rootBacklog = res.volumeByNode.getOrDefault(node, new double[daysToSim]);
+          double[] rootOut =
+              res.totalOutByNode.getOrDefault(node, new double[daysToSim]);
+          double[] rootBacklog =
+              res.volumeByNode.getOrDefault(node, new double[daysToSim]);
 
-          // Compute col width for day numbers and values
+
           int dayNumWidth = Math.max(2, String.valueOf(daysToSim).length());
           int valWidth = 0;
           List<String> outVals = new ArrayList<>();
+          List<String> accumVals = new ArrayList<>();
           List<String> storeVals = new ArrayList<>();
+          double accum = 0.0;
           for (int d = 0; d < daysToSim; d++) {
             String v = UnitVal.ofCanonical(rootOut[d], Kind.VOLUME).toString();
-            String s = UnitVal.ofCanonical(rootBacklog[d], Kind.VOLUME).toString();
+            accum += rootOut[d];
+            String a = UnitVal.ofCanonical(accum, Kind.VOLUME).toString();
+            String s =
+                UnitVal.ofCanonical(rootBacklog[d], Kind.VOLUME).toString();
             outVals.add(v);
+            accumVals.add(a);
             storeVals.add(s);
-            valWidth = Math.max(valWidth, Math.max(v.length(), s.length()));
+            valWidth =
+                Math.max(valWidth, Math.max(Math.max(v.length(), a.length()),
+                                            s.length()));
           }
           int cellWidth = Math.max(dayNumWidth, valWidth);
 
-          // First column width sized for longest label among
-          // Day/Outflow/Storage
-          int firstLabelWidth = Math.max("Day".length(), Math.max("Outflow".length(), "Storage".length()));
+          int firstLabelWidth = Math.max(
+              Math.max("Day".length(), "Outflow".length()),
+              Math.max("Storage".length(), "Accumulated".length()));
 
-          List<Integer> outflowRowWidths = joinWidths(firstLabelWidth, repeatWidth(cellWidth, daysToSim));
+          List<Integer> outflowRowWidths =
+              joinWidths(firstLabelWidth, repeatWidth(cellWidth, daysToSim));
           int outflowTableWidth = tableWidth(outflowRowWidths);
-          sb.append(centerEquals(" Outflow ", outflowTableWidth)).append('\n');
+          sb.append(centerEquals(" " + node.name + " Outflow ", outflowTableWidth)).append('\n');
 
-          // "Day" header row
           List<String> dayHeader = new ArrayList<>();
           dayHeader.add("Day");
           for (int d = 1; d <= daysToSim; d++)
             dayHeader.add(String.valueOf(d));
           sb.append(renderRowLeftFirst(dayHeader, outflowRowWidths));
 
-          // Divider row
-          sb.append(renderDivider(outflowRowWidths, '-'));
+          sb.append(renderDivider(outflowRowWidths, '_'));
 
-          // Outflow row
           List<String> outflowRow = new ArrayList<>();
           outflowRow.add("Outflow");
           outflowRow.addAll(outVals);
           sb.append(renderRowLeftFirst(outflowRow, outflowRowWidths));
 
-          // Storage row (end-of-day dam volume)
           List<String> storageRow = new ArrayList<>();
           storageRow.add("Storage");
           storageRow.addAll(storeVals);
           sb.append(renderRowLeftFirst(storageRow, outflowRowWidths));
+
+          sb.append(renderDivider(outflowRowWidths, '-'));
+
+          List<String> accumRow = new ArrayList<>();
+          accumRow.add("Accumulated");
+          accumRow.addAll(accumVals);
+          sb.append(renderRowLeftFirst(accumRow, outflowRowWidths));
 
           sb.append(renderDivider(outflowRowWidths, '=')).append('\n');
 
@@ -168,18 +170,15 @@ class NativeWaterNode {
     return s + " ".repeat(n);
   }
 
-  // Center text within a field of width w using the given fill char.
-  // If w <= s.length(), returns s unchanged.
   private static String center(String s, int w, char fill) {
     int pad = w - s.length();
     if (pad <= 0)
       return s;
     int left = pad / 2;
-    int right = pad - left; // right gets the extra when pad is odd
+    int right = pad - left;
     return repeat(fill, left) + s + repeat(fill, right);
   }
 
-  // Equivalent of the old padMiddle, but correct and reusable.
   private static String centerEquals(String s, int w) {
     return center(s, w, '=');
   }
@@ -189,8 +188,6 @@ class NativeWaterNode {
       return "";
     return String.valueOf(c).repeat(n);
   }
-
-  // ---------- Helpers extracted for table rendering ----------
 
   private static List<WaterNode>
   sortedRivers(Map<WaterNode, double[]> volumeByNode) {
@@ -204,7 +201,6 @@ class NativeWaterNode {
     return rivers;
   }
 
-  // For each river, format per-day values to ML strings to size columns.
   private static List<List<String>>
   formatMlColumns(List<WaterNode> rivers, Map<WaterNode, double[]> volumeByNode,
                   int days) {
@@ -219,8 +215,6 @@ class NativeWaterNode {
     return cols;
   }
 
-  // Compute widths for columns after the first, by considering headers and
-  // cells.
   private static List<Integer>
   computeColumnWidths(List<String> headersAfterFirst,
                       List<List<String>> dataCols) {
@@ -234,13 +228,9 @@ class NativeWaterNode {
     return widths;
   }
 
-  // Render a row like: "| <cell0 padded> | <cell1 padded> | ..."
-  // By default, all columns are right-aligned (numbers). Use
-  // renderRowLeftFirst if the first column should be left-aligned.
   private static String renderRow(List<String> cells, List<Integer> widths) {
     StringBuilder sb = new StringBuilder();
     sb.append("| ");
-    // first column right-aligned by default
     sb.append(padLeft(cells.get(0), widths.get(0))).append(" |");
     for (int i = 1; i < cells.size(); i++) {
       sb.append(' ').append(padLeft(cells.get(i), widths.get(i))).append(" |");
@@ -253,7 +243,6 @@ class NativeWaterNode {
                                            List<Integer> widths) {
     StringBuilder sb = new StringBuilder();
     sb.append("| ");
-    // first column left-aligned
     sb.append(padRight(cells.get(0), widths.get(0))).append(" |");
     for (int i = 1; i < cells.size(); i++) {
       sb.append(' ').append(padLeft(cells.get(i), widths.get(i))).append(" |");
@@ -265,13 +254,9 @@ class NativeWaterNode {
   private static String renderDivider(List<Integer> widths, char fill) {
     List<String> cells =
         widths.stream().map(w -> repeat(fill, w)).collect(Collectors.toList());
-    // Dividers look better with first column left, but padding is same length.
     return renderRowLeftFirst(cells, widths);
   }
 
-  // Compute full row width for centering: sum(widths) + 3*k + 1
-  // Each column contributes: " " + content(width) + " |" => width + 3
-  // Plus initial leading "| " => 2, which is included by the formula (3*k + 1).
   private static int tableWidth(List<Integer> widths) {
     int sum = 0;
     for (int w : widths)

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 public class Dam extends WaterNode {
-  // Lox callable: (curr_vol) => volAsOutflow
   private final LoxCallable outFlow;
 
   public Dam(Interpreter interpreter, String name, LoxCallable outFlow) {
@@ -17,7 +16,6 @@ public class Dam extends WaterNode {
   protected NodeOutputs doCalculateDetailed(int days, double[] rainfall,
                                             Set<WaterNode> visiting,
                                             DetailedResult res) {
-    // Gather upstream per-edge outflows.
     List<double[]> upstreamPerEdge = new ArrayList<>(inflows.size());
     for (WaterNode in : inflows) {
       NodeOutputs child = evalChildDetailed(in, days, rainfall, visiting, res);
@@ -26,12 +24,9 @@ public class Dam extends WaterNode {
 
     double[] totalOut = new double[days];
     double[] backlog = new double[days];
-
-    // Stored water carried day-to-day.
     double stored = 0.0;
 
     for (int day = 0; day < days; day++) {
-      // Today's inflow (already split by upstream).
       double incoming = 0.0;
       for (int k = 0; k < upstreamPerEdge.size(); k++) {
         double[] inOut = upstreamPerEdge.get(k);
@@ -39,22 +34,14 @@ public class Dam extends WaterNode {
           incoming += inOut[day];
       }
 
-      // Current available volume before release.
       double currVol = stored + incoming;
-
-      // Ask policy how much to release today.
       double requested = computeRelease(currVol);
-
-      // Clamp to [0, currVol].
       double outToday = Math.max(0.0, Math.min(requested, currVol));
       totalOut[day] = outToday;
-
-      // Remaining stays in storage for future days.
       stored = currVol - outToday;
       backlog[day] = stored;
     }
 
-    // Split evenly across downstream outflows for propagation.
     int branches = Math.max(1, downstreamCount());
     double[] perEdgeOut;
     if (branches > 1) {

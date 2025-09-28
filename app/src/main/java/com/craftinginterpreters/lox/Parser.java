@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 class Parser {
   private static class ParseError extends RuntimeException {}
 
@@ -91,7 +90,6 @@ class Parser {
       return nodeDeclaration(previous());
     if (check(IDENTIFIER) && checkNext(RSHIFT))
       return edgeStatement();
-
     if (match(CLASS))
       return classDeclaration();
     if (match(FUN))
@@ -142,6 +140,7 @@ class Parser {
     Token fromName = consume(IDENTIFIER, "Expect upstream name.");
     Token arrow = consume(RSHIFT, "Expect '>>'.");
     Token toName = consume(IDENTIFIER, "Expect downstream name.");
+
     consume(SEMICOLON, "Expect ';' after connection.");
     return new Stmt.Edge(new Expr.Variable(fromName), arrow,
                          new Expr.Variable(toName));

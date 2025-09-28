@@ -1,0 +1,21 @@
+river River1 { 
+	area: 2.5sqm, 
+	flow_days: 3, 
+	flow_shape: Shape_LastDay,
+};
+
+river River2 { 
+	area: 1.0sqm, 
+	flow_days: 2, 
+	flow_shape: (day, max_days) => { return 1 / max_days; } 
+};
+
+dam Dam1 { 
+	out_flow: (vol) => { return min(vol, 10L); } 
+};
+
+River1 >> River2;
+River2 >> Dam1;
+
+var rainfall = [10mm, 0mm, 5mm, 0mm];
+print Dam1.calculate(8, rainfall);
