@@ -6,8 +6,17 @@ fun provided_system(simulation_days, rainfall) {
     river central_molongolo { area: 30sqkm, flow_days: 5, flow_shape: Shape_Linear };
     river lower_molongolo2 { area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
 
-    dam dam_1 { out_flow: (current_volume) => { return current_volume; } };
-    dam dam_2 { out_flow: (current_volume) => { return current_volume; } };
+    dam dam_1 { 
+        out_flow: (current_volume, daily_rainfall, flow_rate) => {
+            return current_volume;
+        }
+    };
+    
+    dam dam_2 { 
+        out_flow: (current_volume, daily_rainfall, flow_rate) => {
+            return current_volume;
+        }
+    };
 
     googong >> dam_1;
     dam_1 >> queanbeyan;

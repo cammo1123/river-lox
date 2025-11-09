@@ -4,7 +4,11 @@ fun catchment_area1(simulation_days, rainfall) {
 	river central_molongolo	{ area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
 	river middle_molongolo	{ area: 10sqkm, flow_days: 5, flow_shape: Shape_Linear };
 
-	dam dam_1 { out_flow: (current_volume) => { return current_volume; } };
+	dam dam_1 { 
+		out_flow: (current_volume, daily_rainfall, flow_rate) => {
+			return current_volume; 
+		} 
+	};
 
 	upper_molongolo >> central_molongolo;
 	lower_molongolo >> central_molongolo;

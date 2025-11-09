@@ -18,6 +18,6 @@ clear; javac -d out src/tool/*.java; java -cp out tool.GenerateAst src/lox
 
 # Recommended Examples
 
-`examples/linear_flow_shape.lox` - Demonstrates linear flow and lambda functions.
 `examples/constricted_dam_flow.lox` - Simulates flow through a constricted dam.
+`examples/linear_flow_shape.lox` - Demonstrates linear flow and lambda functions.
 `examples/provided_system.rlox` - System provided in the assignment.
