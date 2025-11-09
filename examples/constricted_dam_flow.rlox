@@ -1,14 +1,33 @@
+// Googong dam blocks exactly half the water that flows into it unless the rain that day was
+// greater than 10mm
+
 fun catchment_area3(simulation_days, rainfall) {
-	river lower_molongolo	{ area: 1sqkm, flow_days: 2, flow_shape: Shape_LastDay };
+	river upper_river		{ area: 1sqkm, flow_days: 2, flow_shape: Shape_LastDay };
+	river after_middle_dam	{ area: 1sqkm, flow_days: 2, flow_shape: Shape_LastDay };
 
-	dam dam_1 { out_flow: (current_volume) => { return max(current_volume * 0.8, 50L); } };
+	dam middle_dam {
+		out_flow: (current_volume, daily_rainfall, flow_rate) => {
+			if (daily_rainfall > 10mm) {
+				return current_volume;
+			}
+			return max(current_volume * 0.5, 10kl);
+		} 
+	};
 
-	lower_molongolo >> dam_1;
+	dam final_dam {
+		out_flow: (current_volume, daily_rainfall, flow_rate) => {
+			return current_volume;
+		} 
+	};
+
+	upper_river >> middle_dam;
+	middle_dam >> after_middle_dam;
+	after_middle_dam >> final_dam;
 
 	print "Simulated " + simulation_days + " day(s) with rainfall(mm): " + rainfall;
 	print "";
-	print dam_1.tree;
-	print dam_1.calculate(simulation_days, rainfall);
+	print final_dam.tree;
+	print final_dam.calculate(simulation_days, rainfall);
 }
 
-catchment_area3(20, [10mm]);
+catchment_area3(16, [10mm]);

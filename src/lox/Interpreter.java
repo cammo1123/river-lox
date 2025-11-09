@@ -638,13 +638,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     String name = stmt.name.lexeme;
     NativeWaterNode node;
     if (stmt.kind.type == TokenType.RIVER) {
-      Double flow_days = getDouble(stmt, "flow_days");
+      Double flowDays = getDouble(stmt, "flow_days");
       Double area = getDouble(stmt, "area");
-      LoxCallable flow_shape = getLambda(stmt, "flow_shape", 2);
+      LoxCallable flowShape = getLambda(stmt, "flow_shape", 2);
       node = new NativeWaterNode(
-          new River(this, name, area, flow_days, flow_shape));
+          new River(this, name, area, flowDays, flowShape));
     } else if (stmt.kind.type == TokenType.DAM) {
-      LoxCallable outFlow = getLambda(stmt, "out_flow", 1);
+      LoxCallable outFlow = getLambda(stmt, "out_flow", 3);
       node = new NativeWaterNode(new Dam(this, name, outFlow));
     } else {
       throw new RuntimeError(stmt.name, "Unknown node kind.");

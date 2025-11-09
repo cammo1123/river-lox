@@ -17,5 +17,5 @@ dam Dam1 {
 River1 >> River2;
 River2 >> Dam1;
 
-var rainfall = [10mm, 0mm, 5mm, 0mm];
-print Dam1.calculate(8, rainfall);
+print Dam1.tree;
+print Dam1.calculate(8, [10mm, 0mm, 5mm, 0mm]);

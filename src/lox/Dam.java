@@ -35,7 +35,7 @@ public class Dam extends WaterNode {
       }
 
       double currVol = stored + incoming;
-      double requested = computeRelease(currVol);
+      double requested = computeRelease(currVol, rainfall.length > day ? rainfall[day] : 0, currVol / (24.0 * 60.0 * 60.0));
       double outToday = Math.max(0.0, Math.min(requested, currVol));
       totalOut[day] = outToday;
       stored = currVol - outToday;
@@ -55,8 +55,8 @@ public class Dam extends WaterNode {
     return new NodeOutputs(totalOut, perEdgeOut, backlog);
   }
 
-  private double computeRelease(double currVol) {
-    Object flowObj = outFlow.call(interpreter, List.of(currVol));
+  private double computeRelease(double currVol, double dailyRainfall, double flowRate) {
+    Object flowObj = outFlow.call(interpreter, List.of(currVol, dailyRainfall, flowRate));
     double out;
     if (flowObj instanceof Double d) {
       out = d;
